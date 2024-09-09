@@ -50,7 +50,7 @@ SLEEP_TIME=1
         wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl delete pod demo-leaf2 --namespace default --force --ignore-not-found=true'
 
         # restore the original notation verifier for other tests
-        wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl apply -f ./test/bats/tests/config/config_v1beta1_verifier_notation_akv.yaml'
+        wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl replace -f ./test/bats/tests/config/config_v1beta1_verifier_notation_akv.yaml'
     }
 
     # configure the default template/constraint
@@ -70,7 +70,7 @@ SLEEP_TIME=1
     sed -i '10,$d' ./test/bats/tests/config/config_v1beta1_keymanagementprovider_inline.yaml
 
     # configure the notation verifier to use the inline key management provider
-    run kubectl apply -f ./test/bats/tests/config/config_v1beta1_verifier_notation_kmprovider.yaml
+    run kubectl replace -f ./test/bats/tests/config/config_v1beta1_verifier_notation_kmprovider.yaml
     assert_success
 
     # wait for the httpserver cache to be invalidated
@@ -251,7 +251,7 @@ SLEEP_TIME=1
     assert_failure
 
     echo "Add notation verifier and validate deployment succeeds"
-    run kubectl apply -f ./config/samples/clustered/verifier/config_v1beta1_verifier_notation_kmprovider.yaml
+    run kubectl replace -f ./config/samples/clustered/verifier/config_v1beta1_verifier_notation_kmprovider.yaml
     assert_success
 
     # wait for the httpserver cache to be invalidated

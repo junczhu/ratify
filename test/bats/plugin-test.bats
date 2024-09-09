@@ -216,7 +216,7 @@ RATIFY_NAMESPACE=gatekeeper-system
         wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl delete namespacedverifiers.config.ratify.deislabs.io/verifier-cosign --namespace default --ignore-not-found=true'
         wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl delete namespacedverifiers.config.ratify.deislabs.io/verifier-notation --namespace default --ignore-not-found=true'
         wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl delete pod all-in-one --namespace default --force --ignore-not-found=true'
-        wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl apply -f ./config/samples/clustered/verifier/config_v1beta1_verifier_notation.yaml'
+        wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl replace -f ./config/samples/clustered/verifier/config_v1beta1_verifier_notation.yaml'
         wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl apply -f ./config/samples/clustered/verifier/config_v1beta1_verifier_cosign.yaml'
         wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl delete namespacedkeymanagementproviders.config.ratify.deislabs.io/ratify-notation-inline-cert-0 -n default --ignore-not-found=true'
         wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl apply -f clusternotationkmprovider.yaml'
@@ -233,7 +233,7 @@ RATIFY_NAMESPACE=gatekeeper-system
     assert_success
     sleep 5
 
-    run kubectl apply -f ./config/samples/namespaced/verifier/config_v1beta1_verifier_notation.yaml
+    run kubectl replace -f ./config/samples/namespaced/verifier/config_v1beta1_verifier_notation.yaml
     run kubectl delete verifiers.config.ratify.deislabs.io/verifier-notation --ignore-not-found=true
     run kubectl apply -f ./config/samples/namespaced/verifier/config_v1beta1_verifier_cosign.yaml
     run kubectl delete verifiers.config.ratify.deislabs.io/verifier-cosign --ignore-not-found=true
@@ -287,7 +287,7 @@ RATIFY_NAMESPACE=gatekeeper-system
     assert_failure
 
     echo "Add notation verifier and validate deployment succeeds"
-    run kubectl apply -f ./config/samples/clustered/verifier/config_v1beta1_verifier_notation.yaml
+    run kubectl replace -f ./config/samples/clustered/verifier/config_v1beta1_verifier_notation.yaml
     assert_success
 
     # wait for the httpserver cache to be invalidated

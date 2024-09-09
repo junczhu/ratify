@@ -234,7 +234,6 @@ func normalizeVerificationCertsStores(conf *NotationPluginVerifierConfig) error 
 			isCertStoresByType = true
 		}
 	}
-	// check log
 	if isCertStoresByType && isLegacyCertStore {
 		return re.ErrorCodeConfigInvalid.NewError(re.Verifier, conf.Name, re.EmptyLink, nil, "both old VerificationCertStores and new VerificationCertStores are provided, please provide only one", re.HideStackTrace)
 	} else if !isCertStoresByType && isLegacyCertStore {
