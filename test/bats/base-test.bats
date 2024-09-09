@@ -136,7 +136,7 @@ RATIFY_NAMESPACE=gatekeeper-system
         assert_success
 
         # restore the original notation verifier for other tests
-        wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl apply -f ./config/samples/clustered/verifier/config_v1beta1_verifier_notation.yaml'
+        wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl replace -f ./config/samples/clustered/verifier/config_v1beta1_verifier_notation.yaml'
 
         # delete new namespace
         run kubectl delete namespace new-namespace
@@ -168,7 +168,7 @@ RATIFY_NAMESPACE=gatekeeper-system
 
     # configure the notation verifier to use inline certificate store in new namespace.
     sed 's/default\//new-namespace\//' ./config/samples/clustered/verifier/config_v1beta1_verifier_notation_specificnskmprovider.yaml >verifier-new-namespace.yaml
-    run kubectl apply -f verifier-new-namespace.yaml
+    run kubectl replace -f verifier-new-namespace.yaml
     assert_success
     sleep 3
 
@@ -275,7 +275,7 @@ RATIFY_NAMESPACE=gatekeeper-system
     assert_failure
 
     echo "Add notation verifier and validate deployment succeeds"
-    run kubectl apply -f ./config/samples/clustered/verifier/config_v1beta1_verifier_notation.yaml
+    run kubectl replace -f ./config/samples/clustered/verifier/config_v1beta1_verifier_notation.yaml
     assert_success
 
     # wait for the httpserver cache to be invalidated
@@ -353,7 +353,7 @@ RATIFY_NAMESPACE=gatekeeper-system
         # restore the original key management provider
         wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl apply -f kmprovider_staging.yaml'
         # restore the original notation verifier for other tests
-        wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl apply -f ./config/samples/clustered/verifier/config_v1beta1_verifier_notation.yaml'
+        wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl replace -f ./config/samples/clustered/verifier/config_v1beta1_verifier_notation.yaml'
     }
 
     # save the existing key management provider inline resource to restore later
@@ -379,7 +379,7 @@ RATIFY_NAMESPACE=gatekeeper-system
     sed -i '9,$d' ./test/bats/tests/config/config_v1beta1_certstore_inline.yaml
 
     # configure the notation verifier to use the inline certificate store
-    run kubectl apply -f ./test/bats/tests/config/config_v1beta1_verifier_notation.yaml
+    run kubectl replace -f ./test/bats/tests/config/config_v1beta1_verifier_notation.yaml
     assert_success
     sleep 10
 
@@ -394,7 +394,7 @@ RATIFY_NAMESPACE=gatekeeper-system
         wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl delete pod demo-alternate --namespace default --force --ignore-not-found=true'
 
         # restore the original notation verifier for other tests
-        wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl apply -f ./config/samples/clustered/verifier/config_v1beta1_verifier_notation.yaml'
+        wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl replace -f ./config/samples/clustered/verifier/config_v1beta1_verifier_notation.yaml'
     }
 
     # configure the default template/constraint
@@ -416,7 +416,7 @@ RATIFY_NAMESPACE=gatekeeper-system
     sed -i '10,$d' ./test/bats/tests/config/config_v1beta1_keymanagementprovider_inline.yaml
 
     # configure the notation verifier to use the inline key management provider
-    run kubectl apply -f ./test/bats/tests/config/config_v1beta1_verifier_notation_kmprovider.yaml
+    run kubectl replace -f ./test/bats/tests/config/config_v1beta1_verifier_notation_kmprovider.yaml
     assert_success
     sleep 10
 
@@ -491,7 +491,7 @@ RATIFY_NAMESPACE=gatekeeper-system
         wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl delete pod demo-leaf2 --namespace default --force --ignore-not-found=true'
 
         # restore the original notation verifier for other tests
-        wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl apply -f ./config/samples/clustered/verifier/config_v1beta1_verifier_notation.yaml'
+        wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl replace -f ./config/samples/clustered/verifier/config_v1beta1_verifier_notation.yaml'
     }
 
     # configure the default template/constraint
@@ -507,7 +507,7 @@ RATIFY_NAMESPACE=gatekeeper-system
     sed -i '10,$d' ./test/bats/tests/config/config_v1beta1_keymanagementprovider_inline.yaml
 
     # configure the notation verifier to use the inline key management provider
-    run kubectl apply -f ./test/bats/tests/config/config_v1beta1_verifier_notation_kmprovider.yaml
+    run kubectl replace -f ./test/bats/tests/config/config_v1beta1_verifier_notation_kmprovider.yaml
     assert_success
 
     # verify that the image can be run with a root cert
@@ -561,7 +561,7 @@ RATIFY_NAMESPACE=gatekeeper-system
         echo "cleaning up"
         wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl delete namespacedverifiers.config.ratify.deislabs.io/verifier-cosign --namespace default --ignore-not-found=true'
         wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl delete namespacedverifiers.config.ratify.deislabs.io/verifier-notation --namespace default --ignore-not-found=true'
-        wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl apply -f ./config/samples/clustered/verifier/config_v1beta1_verifier_notation.yaml'
+        wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl replace -f ./config/samples/clustered/verifier/config_v1beta1_verifier_notation.yaml'
         wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl apply -f ./config/samples/clustered/verifier/config_v1beta1_verifier_cosign.yaml'
         wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl delete namespacedkeymanagementproviders.config.ratify.deislabs.io/ratify-notation-inline-cert-0 -n default --ignore-not-found=true'
         wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl apply -f clusternotationkmprovider.yaml'
@@ -603,7 +603,7 @@ RATIFY_NAMESPACE=gatekeeper-system
     sleep 5
 
     # apply namespaced notation verifiers and delete cluster-wide notation verifiers.
-    run kubectl apply -f ./config/samples/namespaced/verifier/config_v1beta1_verifier_notation.yaml
+    run kubectl replace -f ./config/samples/namespaced/verifier/config_v1beta1_verifier_notation.yaml
     run kubectl delete verifiers.config.ratify.deislabs.io/verifier-notation --ignore-not-found=true
 
     # validate notation images.
