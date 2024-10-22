@@ -29,8 +29,8 @@ import (
 	"time"
 
 	corecrl "github.com/notaryproject/notation-core-go/revocation/crl"
-	"github.com/notaryproject/notation-go/internal/file"
 	"github.com/notaryproject/notation-go/log"
+	"github.com/ratify-project/ratify/pkg/cache/file"
 )
 
 // FileCache implements corecrl.Cache.
