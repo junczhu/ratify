@@ -15,22 +15,27 @@ limitations under the License.
 
 package crlprovider
 
-import "crypto/x509"
+import (
+	"net/http"
 
-// CRLManager defines the interface for managing CRL operations.
-type CRLManager interface {
-	// FetchCRL retrieves the CRL from a given URI.
-	FetchCRL(uri string) (*x509.RevocationList, error)
+	corecrl "github.com/notaryproject/notation-core-go/revocation/crl"
+)
 
-	// ValidateCRL validates the CRL to ensure it is correctly formatted and not expired.
-	ValidateCRL(crl *x509.RevocationList) error
+type CRLFetcherOptions struct {
+	useCache          bool
+	httpClient        *http.Client
+	DiscardCacheError bool // default is false
+}
+
+type CRLCacheOptions struct {
+	cacheRoot string
+}
+
+// CRLProvider defines the interface for managing CRL operations.
+type CRLProvider interface {
+	// NewCRLFetcher creates a new CRLFetcher with the given paramters.
+	NewCRLFetcher(opts CRLFetcherOptions) (*corecrl.Fetcher, error)
 
 	// CacheCRL caches the CRL using the provided cache provider.
-	CacheCRL(uri string, crl *x509.RevocationList) error
-
-	// LoadCRLFromCache loads the CRL from cache if available.
-	LoadCRLFromCache(uri string) (*x509.RevocationList, error)
-
-	// MonitorCRLRefresh sets up the refresh schedule for the CRLs.
-	MonitorCRLRefresh() error
+	NewCRLCache(opts CRLCacheOptions) (*corecrl.Cache, error)
 }
