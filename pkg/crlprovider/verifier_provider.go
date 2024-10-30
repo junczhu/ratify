@@ -16,22 +16,23 @@ limitations under the License.
 package crlprovider
 
 import (
+	"net/http"
+	"time"
+
 	corecrl "github.com/notaryproject/notation-core-go/revocation/crl"
+	"github.com/notaryproject/notation-go/verifier/crl"
 )
 
-type CRLFetcherOptions struct {
-	useCache bool
+type NotationCRLProvider struct {
+	timeout time.Duration
 }
 
-type CRLCacheOptions struct {
-	cacheRoot string
+// NewCRLFetcher creates a new CRLFetcher with the given paramters.
+func (p *NotationCRLProvider) NewCRLFetcher(opts CRLFetcherOptions) (corecrl.Fetcher, error) {
+	return corecrl.NewHTTPFetcher(&http.Client{Timeout: p.timeout})
 }
 
-// CRLProvider defines the interface for managing CRL operations.
-type CRLProvider interface {
-	// NewCRLFetcher creates a new CRLFetcher with the given paramters.
-	NewCRLFetcher(opts CRLFetcherOptions) (corecrl.Fetcher, error)
-
-	// NewCacheCRL caches the CRL using the provided cache provider.
-	NewCRLCache(opts CRLCacheOptions) (corecrl.Cache, error)
+// NewCacheCRL caches the CRL using the provided cache provider.
+func (p *NotationCRLProvider) NewCRLCache(opts CRLCacheOptions) (corecrl.Cache, error) {
+	return crl.NewFileCache(opts.cacheRoot)
 }
