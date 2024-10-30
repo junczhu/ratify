@@ -15,40 +15,22 @@ limitations under the License.
 
 package crlprovider
 
-import (
-	"context"
-	"net/http"
-	"sync"
-	"time"
+import "crypto/x509"
 
-	corecrl "github.com/notaryproject/notation-core-go/revocation/crl"
-)
+// CRLManager defines the interface for managing CRL operations.
+type CRLManager interface {
+	// FetchCRL retrieves the CRL from a given URI.
+	FetchCRL(uri string) (*x509.RevocationList, error)
 
-// static concurrency-safe map to store errors while fetching CRL from CRL management provider.
-// layout:
-//
-// map["<namespace>/<name>"] = error
-var CRLErrMap sync.Map
+	// ValidateCRL validates the CRL to ensure it is correctly formatted and not expired.
+	ValidateCRL(crl *x509.RevocationList) error
 
-// GetCRL gets the CRL from the provider
-func GetCRL(ctx context.Context, url string, timeout time.Duration) (*corecrl.Bundle, error) {
-	if err, ok := CRLErrMap.Load(url); ok && err != nil {
-		return nil, err.(error)
-	}
-	newFetcher, err := corecrl.NewHTTPFetcher(&http.Client{Timeout: timeout})
-	if err != nil {
-		return nil, err
-	}
-	bundle, err := newFetcher.Fetch(ctx, url)
-	if err != nil {
-		SetCRLError(url, err)
-		return nil, err
-	}
-	CRLErrMap.Delete(url)
-	return bundle, nil
-}
+	// CacheCRL caches the CRL using the provided cache provider.
+	CacheCRL(uri string, crl *x509.RevocationList) error
 
-// SetCRLError sets the error while fetching CRL from CRL management provider.
-func SetCRLError(url string, err error) {
-	CRLErrMap.Store(url, err)
+	// LoadCRLFromCache loads the CRL from cache if available.
+	LoadCRLFromCache(uri string) (*x509.RevocationList, error)
+
+	// MonitorCRLRefresh sets up the refresh schedule for the CRLs.
+	MonitorCRLRefresh() error
 }
