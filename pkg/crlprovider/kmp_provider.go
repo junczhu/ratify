@@ -29,10 +29,12 @@ type KMPCRLProvider struct {
 
 // NewCRLFetcher creates a new CRLFetcher with the given paramters.
 func (p *KMPCRLProvider) NewCRLFetcher(opts CRLFetcherOptions) (corecrl.Fetcher, error) {
+	// TODO: rephrase the KMP releated error code
 	return corecrl.NewHTTPFetcher(&http.Client{Timeout: p.timeout})
 }
 
 // NewCacheCRL caches the CRL using the provided cache provider.
 func (p *KMPCRLProvider) NewCRLCache(opts CRLCacheOptions) (corecrl.Cache, error) {
+	// TODO: rephrase the KMP releated error code
 	return crl.NewFileCache(opts.cacheRoot)
 }
