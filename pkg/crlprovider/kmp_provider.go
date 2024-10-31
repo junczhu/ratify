@@ -20,21 +20,22 @@ import (
 	"time"
 
 	corecrl "github.com/notaryproject/notation-core-go/revocation/crl"
+	"github.com/notaryproject/notation-go/dir"
 	"github.com/notaryproject/notation-go/verifier/crl"
 )
 
 type KMPCRLProvider struct {
-	timeout time.Duration
+	Timeout time.Duration
 }
 
 // NewCRLFetcher creates a new CRLFetcher with the given paramters.
 func (p *KMPCRLProvider) NewCRLFetcher(opts CRLFetcherOptions) (corecrl.Fetcher, error) {
 	// TODO: rephrase the KMP releated error code
-	return corecrl.NewHTTPFetcher(&http.Client{Timeout: p.timeout})
+	return corecrl.NewHTTPFetcher(&http.Client{Timeout: p.Timeout})
 }
 
 // NewCacheCRL caches the CRL using the provided cache provider.
 func (p *KMPCRLProvider) NewCRLCache(opts CRLCacheOptions) (corecrl.Cache, error) {
 	// TODO: rephrase the KMP releated error code
-	return crl.NewFileCache(opts.cacheRoot)
+	return crl.NewFileCache(dir.PathCRLCache)
 }

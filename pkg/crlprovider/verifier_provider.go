@@ -20,6 +20,7 @@ import (
 	"time"
 
 	corecrl "github.com/notaryproject/notation-core-go/revocation/crl"
+	"github.com/notaryproject/notation-go/dir"
 	"github.com/notaryproject/notation-go/verifier/crl"
 )
 
@@ -30,11 +31,12 @@ type NotationCRLProvider struct {
 // NewCRLFetcher creates a new CRLFetcher with the given paramters.
 func (p *NotationCRLProvider) NewCRLFetcher(opts CRLFetcherOptions) (corecrl.Fetcher, error) {
 	// TODO: rephrase the Notation releated error code
+	// create a new HTTP fetcher per notation verifier
 	return corecrl.NewHTTPFetcher(&http.Client{Timeout: p.timeout})
 }
 
 // NewCacheCRL caches the CRL using the provided cache provider.
 func (p *NotationCRLProvider) NewCRLCache(opts CRLCacheOptions) (corecrl.Cache, error) {
 	// TODO: rephrase the Notation releated error code
-	return crl.NewFileCache(opts.cacheRoot)
+	return crl.NewFileCache(dir.PathCRLCache)
 }

@@ -20,11 +20,12 @@ import (
 )
 
 type CRLFetcherOptions struct {
-	useCache bool
+	// disableCache provide an configuration for user to disable the cache
+	// disableCache bool
 }
 
 type CRLCacheOptions struct {
-	cacheRoot string
+	// the default cacheRoot value is dir.PathCRLCache
 }
 
 // CRLProvider defines the interface for managing CRL operations.
