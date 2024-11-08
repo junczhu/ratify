@@ -19,10 +19,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	paths "path/filepath"
 	"strings"
-	"time"
 
 	ratifyconfig "github.com/ratify-project/ratify/config"
 	re "github.com/ratify-project/ratify/errors"
@@ -30,7 +28,6 @@ import (
 	"github.com/ratify-project/ratify/pkg/common"
 	"github.com/ratify-project/ratify/pkg/homedir"
 
-	"github.com/notaryproject/notation-go/dir"
 	"github.com/notaryproject/notation-go/log"
 	"github.com/ratify-project/ratify/pkg/ocispecs"
 	"github.com/ratify-project/ratify/pkg/referrerstore"
@@ -39,14 +36,10 @@ import (
 	"github.com/ratify-project/ratify/pkg/verifier/factory"
 	"github.com/ratify-project/ratify/pkg/verifier/types"
 
-	"github.com/notaryproject/notation-core-go/revocation"
-	corecrl "github.com/notaryproject/notation-core-go/revocation/crl"
-	"github.com/notaryproject/notation-core-go/revocation/purpose"
 	_ "github.com/notaryproject/notation-core-go/signature/cose" // register COSE signature
 	_ "github.com/notaryproject/notation-core-go/signature/jws"  // register JWS signature
 	"github.com/notaryproject/notation-go"
 	notationVerifier "github.com/notaryproject/notation-go/verifier"
-	"github.com/notaryproject/notation-go/verifier/crl"
 	"github.com/notaryproject/notation-go/verifier/trustpolicy"
 	"github.com/notaryproject/notation-go/verifier/truststore"
 	oci "github.com/opencontainers/image-spec/specs-go/v1"
@@ -188,39 +181,7 @@ func getVerifierService(conf *NotationPluginVerifierConfig, pluginDirectory stri
 	if err != nil {
 		return nil, err
 	}
-
-	// revocation check using corecrl from notation-core-go and crl from notation-go only
-	crlFetcher, err := corecrl.NewHTTPFetcher(&http.Client{Timeout: 5 * time.Second}) // Todo: replace with crlprovider notation implementation function
-	if err != nil {
-		return nil, err
-	}
-	cacheRoot, err := dir.CacheFS().SysPath(dir.PathCRLCache)
-	if err != nil {
-		return nil, err
-	}
-	crlFetcher.Cache, err = crl.NewFileCache(cacheRoot) // Todo: replace with crlprovider notation implementation function
-	if err != nil {
-		return nil, err
-	}
-	revocationCodeSigningValidator, err := revocation.NewWithOptions(revocation.Options{
-		CRLFetcher:       crlFetcher,
-		CertChainPurpose: purpose.CodeSigning,
-	})
-	if err != nil {
-		return nil, err
-	}
-	revocationTimestampingValidator, err := revocation.NewWithOptions(revocation.Options{
-		CRLFetcher:       crlFetcher,
-		CertChainPurpose: purpose.Timestamping,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	verifier, err := notationVerifier.NewWithOptions(&conf.TrustPolicyDoc, store, NewRatifyPluginManager(pluginDirectory), notationVerifier.VerifierOptions{
-		RevocationCodeSigningValidator:  revocationCodeSigningValidator,
-		RevocationTimestampingValidator: revocationTimestampingValidator,
-	})
+	verifier, err := notationVerifier.New(&conf.TrustPolicyDoc, store, NewRatifyPluginManager(pluginDirectory))
 	if err != nil {
 		return nil, re.ErrorCodePluginInitFailure.WithDetail("Failed to create the Notation Verifier").WithError(err)
 	}
