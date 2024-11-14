@@ -137,6 +137,11 @@ func (f *akvKMProviderFactory) Create(_ string, keyManagementProviderConfig conf
 func (s *akvKMProvider) GetCertificates(ctx context.Context) (map[keymanagementprovider.KMPMapKey][]*x509.Certificate, keymanagementprovider.KeyManagementProviderStatus, error) {
 	certsMap := map[keymanagementprovider.KMPMapKey][]*x509.Certificate{}
 	certsStatus := []map[string]string{}
+	f := NewRevocationFactoryImpl()
+	crlFetcher, err := f.NewFetcher()
+	if err != nil {
+		return nil, nil, err
+	}
 	for _, keyVaultCert := range s.certificates {
 		logger.GetLogger(ctx, logOpt).Debugf("fetching secret from key vault, certName %v,  keyvault %v", keyVaultCert.Name, s.vaultURI)
 
@@ -153,6 +158,18 @@ func (s *akvKMProvider) GetCertificates(ctx context.Context) (map[keymanagementp
 			return nil, nil, fmt.Errorf("failed to get certificates from secret bundle:%w", err)
 		}
 
+		// check if the certificate supports CRL
+		for _, cert := range certResult {
+			if !IsSupported(cert) {
+				continue
+			}
+			for _, crlURL := range cert.CRLDistributionPoints {
+				_, err := crlFetcher.Fetch(ctx, crlURL)
+				if err != nil {
+					return nil, nil, fmt.Errorf("failed to download CRL from %s: %w", crlURL, err) // TODO: unblock on CRL download failure in kmpprovider
+				}
+			}
+		}
 		metrics.ReportAKVCertificateDuration(ctx, time.Since(startTime).Milliseconds(), keyVaultCert.Name)
 		certsStatus = append(certsStatus, certProperty...)
 		certMapKey := keymanagementprovider.KMPMapKey{Name: keyVaultCert.Name, Version: keyVaultCert.Version}
