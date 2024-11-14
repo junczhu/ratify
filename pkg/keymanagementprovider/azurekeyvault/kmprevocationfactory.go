@@ -24,7 +24,7 @@ import (
 type RevocationFactoryImpl struct{}
 
 // NewRevocationFactoryImpl returns a new NewRevocationFactoryImpl instance
-func NewRevocationFactoryImpl() *nv.RevocationFactoryImpl {
+func NewRevocationFactoryImpl() nv.RevocationFactory {
 	return nv.NewRevocationFactoryImpl()
 }
 
