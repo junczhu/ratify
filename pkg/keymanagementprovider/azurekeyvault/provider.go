@@ -31,6 +31,7 @@ import (
 	"time"
 
 	"github.com/go-jose/go-jose/v3"
+	corecrl "github.com/notaryproject/notation-core-go/revocation/crl"
 	re "github.com/ratify-project/ratify/errors"
 	"github.com/ratify-project/ratify/internal/logger"
 	"github.com/ratify-project/ratify/internal/version"
@@ -39,6 +40,7 @@ import (
 	"github.com/ratify-project/ratify/pkg/keymanagementprovider/config"
 	"github.com/ratify-project/ratify/pkg/keymanagementprovider/factory"
 	"github.com/ratify-project/ratify/pkg/metrics"
+	nv "github.com/ratify-project/ratify/pkg/verifier/notation"
 	"golang.org/x/crypto/pkcs12"
 
 	kv "github.com/Azure/azure-sdk-for-go/services/keyvault/v7.1/keyvault"
@@ -68,16 +70,17 @@ type AKVKeyManagementProviderConfig struct {
 }
 
 type akvKMProvider struct {
-	provider     string
-	vaultURI     string
-	tenantID     string
-	clientID     string
-	cloudName    string
-	resource     string
-	certificates []types.KeyVaultValue
-	keys         []types.KeyVaultValue
-	cloudEnv     *azure.Environment
-	kvClient     kvClient
+	provider          string
+	vaultURI          string
+	tenantID          string
+	clientID          string
+	cloudName         string
+	resource          string
+	certificates      []types.KeyVaultValue
+	keys              []types.KeyVaultValue
+	cloudEnv          *azure.Environment
+	kvClient          kvClient
+	revocationFactory nv.RevocationFactory
 }
 
 type akvKMProviderFactory struct{}
@@ -143,15 +146,16 @@ func (f *akvKMProviderFactory) Create(_ string, keyManagementProviderConfig conf
 	}
 
 	provider := &akvKMProvider{
-		provider:     ProviderName,
-		vaultURI:     strings.TrimSpace(conf.VaultURI),
-		tenantID:     strings.TrimSpace(conf.TenantID),
-		clientID:     strings.TrimSpace(conf.ClientID),
-		cloudName:    strings.TrimSpace(conf.CloudName),
-		certificates: conf.Certificates,
-		keys:         conf.Keys,
-		cloudEnv:     azureCloudEnv,
-		resource:     conf.Resource,
+		provider:          ProviderName,
+		vaultURI:          strings.TrimSpace(conf.VaultURI),
+		tenantID:          strings.TrimSpace(conf.TenantID),
+		clientID:          strings.TrimSpace(conf.ClientID),
+		cloudName:         strings.TrimSpace(conf.CloudName),
+		certificates:      conf.Certificates,
+		keys:              conf.Keys,
+		cloudEnv:          azureCloudEnv,
+		resource:          conf.Resource,
+		revocationFactory: NewRevocationFactoryImpl(),
 	}
 	if err := provider.validate(); err != nil {
 		return nil, err
@@ -173,11 +177,6 @@ func (f *akvKMProviderFactory) Create(_ string, keyManagementProviderConfig conf
 func (s *akvKMProvider) GetCertificates(ctx context.Context) (map[keymanagementprovider.KMPMapKey][]*x509.Certificate, keymanagementprovider.KeyManagementProviderStatus, error) {
 	certsMap := map[keymanagementprovider.KMPMapKey][]*x509.Certificate{}
 	certsStatus := []map[string]string{}
-	f := NewRevocationFactoryImpl()
-	crlFetcher, err := f.NewFetcher()
-	if err != nil {
-		return nil, nil, err
-	}
 	for _, keyVaultCert := range s.certificates {
 		logger.GetLogger(ctx, logOpt).Debugf("fetching secret from key vault, certName %v,  keyvault %v", keyVaultCert.Name, s.vaultURI)
 
@@ -211,19 +210,12 @@ func (s *akvKMProvider) GetCertificates(ctx context.Context) (map[keymanagementp
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to get certificates from secret bundle:%w", err)
 		}
-
-		// check if the certificate supports CRL
-		for _, cert := range certResult {
-			if !IsSupported(cert) {
-				continue
-			}
-			for _, crlURL := range cert.CRLDistributionPoints {
-				_, err := crlFetcher.Fetch(ctx, crlURL)
-				if err != nil {
-					return nil, nil, fmt.Errorf("failed to download CRL from %s: %w", crlURL, err) // TODO: unblock on CRL download failure in kmpprovider
-				}
-			}
+		f := s.revocationFactory
+		crlFetcher, err := f.NewFetcher()
+		if err != nil {
+			return nil, nil, err
 		}
+		cacheCRL(ctx, certResult, crlFetcher) // Unblock on CRL download failure in kmpprovider
 		metrics.ReportAKVCertificateDuration(ctx, time.Since(startTime).Milliseconds(), keyVaultCert.Name)
 		certsStatus = append(certsStatus, certProperty...)
 		certMapKey := keymanagementprovider.KMPMapKey{Name: keyVaultCert.Name, Version: keyVaultCert.Version, Enabled: isEnabled}
@@ -473,4 +465,22 @@ func (s *akvKMProvider) validate() error {
 	}
 
 	return nil
+}
+
+// cacheCRL caches the Certificate Revocation Lists (CRLs) for the given certificates using the provided CRL fetcher.
+// It logs a warning if fetching the CRL fails but does not return an error to ensure the process is not blocked.
+func cacheCRL(ctx context.Context, certs []*x509.Certificate, crlFetcher corecrl.Fetcher) {
+	for _, cert := range certs {
+		// check if the certificate supports CRL
+		if !IsSupported(cert) {
+			continue
+		}
+		for _, crlURL := range cert.CRLDistributionPoints {
+			_, err := crlFetcher.Fetch(ctx, crlURL)
+			if err != nil {
+				// Log error but do not return. Ensure unblock on CRL download failure
+				logger.GetLogger(ctx, logOpt).Warnf("failed to download CRL from %s: %v", crlURL, err)
+			}
+		}
+	}
 }

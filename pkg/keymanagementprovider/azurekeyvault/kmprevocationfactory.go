@@ -18,14 +18,42 @@ package azurekeyvault
 import (
 	"crypto/x509"
 
+	"github.com/notaryproject/notation-core-go/revocation"
+	corecrl "github.com/notaryproject/notation-core-go/revocation/crl"
 	nv "github.com/ratify-project/ratify/pkg/verifier/notation"
 )
 
-type RevocationFactoryImpl struct{}
+type RevocationFactoryImpl struct {
+	EnableCache bool
+	Fetcher     corecrl.Fetcher
+}
 
 // NewRevocationFactoryImpl returns a new NewRevocationFactoryImpl instance
 func NewRevocationFactoryImpl() nv.RevocationFactory {
-	return nv.NewRevocationFactoryImpl()
+	// Enable cache by default
+	return &RevocationFactoryImpl{EnableCache: true}
+}
+
+func (f *RevocationFactoryImpl) NewFetcher() (corecrl.Fetcher, error) {
+	if f.Fetcher != nil {
+		return f.Fetcher, nil
+	}
+	fetcher, err := nv.NewRevocationFactoryImpl().NewFetcher()
+	if err != nil {
+		return nil, err
+	}
+	f.Fetcher = fetcher
+	if !f.EnableCache {
+		if httpFetcher, ok := f.Fetcher.(*corecrl.HTTPFetcher); ok {
+			httpFetcher.Cache = nil
+		}
+	}
+	return f.Fetcher, nil
+}
+
+// NewValidator is not used by Azure Key Vault case. Not implemented.
+func (f *RevocationFactoryImpl) NewValidator(opts revocation.Options) (revocation.Validator, error) {
+	return nil, nil
 }
 
 // IsSupported checks if the certificate supports CRL
