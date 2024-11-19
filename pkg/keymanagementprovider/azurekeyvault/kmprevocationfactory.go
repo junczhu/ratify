@@ -16,8 +16,6 @@ limitations under the License.
 package azurekeyvault
 
 import (
-	"crypto/x509"
-
 	"github.com/notaryproject/notation-core-go/revocation"
 	corecrl "github.com/notaryproject/notation-core-go/revocation/crl"
 	nv "github.com/ratify-project/ratify/pkg/verifier/notation"
@@ -53,11 +51,6 @@ func (f *RevocationFactoryImpl) NewFetcher() (corecrl.Fetcher, error) {
 // NewValidator is not used by Azure Key Vault case. Not implemented.
 func (f *RevocationFactoryImpl) NewValidator(_ revocation.Options) (revocation.Validator, error) {
 	return nil, nil
-}
-
-// IsSupported checks if the certificate supports CRL
-func IsSupported(cert *x509.Certificate) bool {
-	return cert != nil && len(cert.CRLDistributionPoints) > 0
 }
 
 // createFetcher creates a new Fetcher instance using the NewRevocationFactoryImpl method

@@ -24,9 +24,11 @@ import (
 	"strings"
 	"sync"
 
+	corecrl "github.com/notaryproject/notation-core-go/revocation/crl"
 	"github.com/ratify-project/ratify/errors"
 	"github.com/ratify-project/ratify/internal/constants"
 	ctxUtils "github.com/ratify-project/ratify/internal/context"
+	"github.com/ratify-project/ratify/internal/logger"
 	vu "github.com/ratify-project/ratify/pkg/verifier/utils"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 )
@@ -86,6 +88,12 @@ var certificateErrMap sync.Map
 //
 //	map["<namespace>/<name>"] = error
 var keyErrMap sync.Map
+
+// logOpt is a logger.Option configuration for the KeyManagementProvider component.
+// It sets the ComponentType to logger.KeyManagementProvider.
+var logOpt = logger.Option{
+	ComponentType: logger.KeyManagementProvider,
+}
 
 // DecodeCertificates decodes PEM-encoded bytes into an x509.Certificate chain.
 func DecodeCertificates(value []byte) ([]*x509.Certificate, error) {
@@ -240,4 +248,27 @@ func hasAccessToProvider(ctx context.Context, provider string) bool {
 		return !vu.IsNamespacedNamed(provider)
 	}
 	return strings.HasPrefix(provider, namespace+constants.NamespaceSeperator) || !vu.IsNamespacedNamed(provider)
+}
+
+// IsSupported checks if the certificate supports CRL
+func IsSupported(cert *x509.Certificate) bool {
+	return cert != nil && len(cert.CRLDistributionPoints) > 0
+}
+
+// cacheCRL caches the Certificate Revocation Lists (CRLs) for the given certificates using the provided CRL fetcher.
+// It logs a warning if fetching the CRL fails but does not return an error to ensure the process is not blocked.
+func CacheCRL(ctx context.Context, certs []*x509.Certificate, crlFetcher corecrl.Fetcher) {
+	for _, cert := range certs {
+		// check if the certificate supports CRL
+		if !IsSupported(cert) {
+			continue
+		}
+		for _, crlURL := range cert.CRLDistributionPoints {
+			_, err := crlFetcher.Fetch(ctx, crlURL)
+			if err != nil {
+				// Log error but do not return. Ensure unblock on CRL download failure
+				logger.GetLogger(ctx, logOpt).Warnf("failed to download CRL from %s: %v", crlURL, err)
+			}
+		}
+	}
 }

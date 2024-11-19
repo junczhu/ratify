@@ -31,11 +31,10 @@ import (
 	"time"
 
 	"github.com/go-jose/go-jose/v3"
-	corecrl "github.com/notaryproject/notation-core-go/revocation/crl"
 	re "github.com/ratify-project/ratify/errors"
 	"github.com/ratify-project/ratify/internal/logger"
 	"github.com/ratify-project/ratify/internal/version"
-	"github.com/ratify-project/ratify/pkg/keymanagementprovider"
+	kmp "github.com/ratify-project/ratify/pkg/keymanagementprovider"
 	"github.com/ratify-project/ratify/pkg/keymanagementprovider/azurekeyvault/types"
 	"github.com/ratify-project/ratify/pkg/keymanagementprovider/config"
 	"github.com/ratify-project/ratify/pkg/keymanagementprovider/factory"
@@ -124,7 +123,7 @@ func init() {
 }
 
 // Create creates a new instance of the provider after marshalling and validating the configuration
-func (f *akvKMProviderFactory) Create(_ string, keyManagementProviderConfig config.KeyManagementProviderConfig, _ string) (keymanagementprovider.KeyManagementProvider, error) {
+func (f *akvKMProviderFactory) Create(_ string, keyManagementProviderConfig config.KeyManagementProviderConfig, _ string) (kmp.KeyManagementProvider, error) {
 	conf := AKVKeyManagementProviderConfig{}
 
 	keyManagementProviderConfigBytes, err := json.Marshal(keyManagementProviderConfig)
@@ -174,8 +173,8 @@ func (f *akvKMProviderFactory) Create(_ string, keyManagementProviderConfig conf
 
 // GetCertificates returns an array of certificates based on certificate properties defined in config
 // get certificate retrieve the entire cert chain using getSecret API call
-func (s *akvKMProvider) GetCertificates(ctx context.Context) (map[keymanagementprovider.KMPMapKey][]*x509.Certificate, keymanagementprovider.KeyManagementProviderStatus, error) {
-	certsMap := map[keymanagementprovider.KMPMapKey][]*x509.Certificate{}
+func (s *akvKMProvider) GetCertificates(ctx context.Context) (map[kmp.KMPMapKey][]*x509.Certificate, kmp.KeyManagementProviderStatus, error) {
+	certsMap := map[kmp.KMPMapKey][]*x509.Certificate{}
 	certsStatus := []map[string]string{}
 	for _, keyVaultCert := range s.certificates {
 		logger.GetLogger(ctx, logOpt).Debugf("fetching secret from key vault, certName %v,  keyvault %v", keyVaultCert.Name, s.vaultURI)
@@ -196,8 +195,8 @@ func (s *akvKMProvider) GetCertificates(ctx context.Context) (map[keymanagementp
 				lastRefreshed := startTime.Format(time.RFC3339)
 				certProperty := getStatusProperty(keyVaultCert.Name, keyVaultCert.Version, lastRefreshed, isEnabled)
 				certsStatus = append(certsStatus, certProperty)
-				mapKey := keymanagementprovider.KMPMapKey{Name: keyVaultCert.Name, Version: keyVaultCert.Version, Enabled: isEnabled}
-				keymanagementprovider.DeleteCertificateFromMap(s.resource, mapKey)
+				mapKey := kmp.KMPMapKey{Name: keyVaultCert.Name, Version: keyVaultCert.Version, Enabled: isEnabled}
+				kmp.DeleteCertificateFromMap(s.resource, mapKey)
 				continue
 			}
 
@@ -215,18 +214,18 @@ func (s *akvKMProvider) GetCertificates(ctx context.Context) (map[keymanagementp
 		if err != nil {
 			return nil, nil, err
 		}
-		cacheCRL(ctx, certResult, crlFetcher) // Unblock on CRL download failure in kmpprovider
+		kmp.CacheCRL(ctx, certResult, crlFetcher) // Unblock on CRL download failure in kmpprovider
 		metrics.ReportAKVCertificateDuration(ctx, time.Since(startTime).Milliseconds(), keyVaultCert.Name)
 		certsStatus = append(certsStatus, certProperty...)
-		certMapKey := keymanagementprovider.KMPMapKey{Name: keyVaultCert.Name, Version: keyVaultCert.Version, Enabled: isEnabled}
+		certMapKey := kmp.KMPMapKey{Name: keyVaultCert.Name, Version: keyVaultCert.Version, Enabled: isEnabled}
 		certsMap[certMapKey] = certResult
 	}
 	return certsMap, getStatusMap(certsStatus, types.CertificatesStatus), nil
 }
 
 // GetKeys returns an array of keys based on key properties defined in config
-func (s *akvKMProvider) GetKeys(ctx context.Context) (map[keymanagementprovider.KMPMapKey]crypto.PublicKey, keymanagementprovider.KeyManagementProviderStatus, error) {
-	keysMap := map[keymanagementprovider.KMPMapKey]crypto.PublicKey{}
+func (s *akvKMProvider) GetKeys(ctx context.Context) (map[kmp.KMPMapKey]crypto.PublicKey, kmp.KeyManagementProviderStatus, error) {
+	keysMap := map[kmp.KMPMapKey]crypto.PublicKey{}
 	keysStatus := []map[string]string{}
 
 	for _, keyVaultKey := range s.keys {
@@ -248,8 +247,8 @@ func (s *akvKMProvider) GetKeys(ctx context.Context) (map[keymanagementprovider.
 			lastRefreshed := startTime.Format(time.RFC3339)
 			properties := getStatusProperty(keyVaultKey.Name, keyVaultKey.Version, lastRefreshed, isEnabled)
 			keysStatus = append(keysStatus, properties)
-			mapKey := keymanagementprovider.KMPMapKey{Name: keyVaultKey.Name, Version: keyVaultKey.Version, Enabled: isEnabled}
-			keymanagementprovider.DeleteKeyFromMap(s.resource, mapKey)
+			mapKey := kmp.KMPMapKey{Name: keyVaultKey.Name, Version: keyVaultKey.Version, Enabled: isEnabled}
+			kmp.DeleteKeyFromMap(s.resource, mapKey)
 			continue
 		}
 
@@ -257,7 +256,7 @@ func (s *akvKMProvider) GetKeys(ctx context.Context) (map[keymanagementprovider.
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to get key from key bundle:%w", err)
 		}
-		keysMap[keymanagementprovider.KMPMapKey{Name: keyVaultKey.Name, Version: keyVaultKey.Version, Enabled: isEnabled}] = publicKey
+		keysMap[kmp.KMPMapKey{Name: keyVaultKey.Name, Version: keyVaultKey.Version, Enabled: isEnabled}] = publicKey
 		metrics.ReportAKVCertificateDuration(ctx, time.Since(startTime).Milliseconds(), keyVaultKey.Name)
 		properties := getStatusProperty(keyVaultKey.Name, keyVaultKey.Version, time.Now().Format(time.RFC3339), isEnabled)
 		keysStatus = append(keysStatus, properties)
@@ -271,8 +270,8 @@ func (s *akvKMProvider) IsRefreshable() bool {
 }
 
 // azure keyvault provider certificate/key status is a map from "certificates" key or "keys" key to an array of key management provider status
-func getStatusMap(statusMap []map[string]string, contentType string) keymanagementprovider.KeyManagementProviderStatus {
-	status := keymanagementprovider.KeyManagementProviderStatus{}
+func getStatusMap(statusMap []map[string]string, contentType string) kmp.KeyManagementProviderStatus {
+	status := kmp.KeyManagementProviderStatus{}
 	status[contentType] = statusMap
 	return status
 }
@@ -364,7 +363,7 @@ func getCertsFromSecretBundle(ctx context.Context, secretBundle kv.SecretBundle,
 		case "CERTIFICATE":
 			var pemData []byte
 			pemData = append(pemData, pem.EncodeToMemory(block)...)
-			decodedCerts, err := keymanagementprovider.DecodeCertificates(pemData)
+			decodedCerts, err := kmp.DecodeCertificates(pemData)
 			if err != nil {
 				return nil, nil, re.ErrorCodeCertInvalid.NewError(re.KeyManagementProvider, ProviderName, re.EmptyLink, err, fmt.Sprintf("azure keyvault key management provider: failed to decode Certificate %s, version %s", certName, version), re.HideStackTrace)
 			}
@@ -465,22 +464,4 @@ func (s *akvKMProvider) validate() error {
 	}
 
 	return nil
-}
-
-// cacheCRL caches the Certificate Revocation Lists (CRLs) for the given certificates using the provided CRL fetcher.
-// It logs a warning if fetching the CRL fails but does not return an error to ensure the process is not blocked.
-func cacheCRL(ctx context.Context, certs []*x509.Certificate, crlFetcher corecrl.Fetcher) {
-	for _, cert := range certs {
-		// check if the certificate supports CRL
-		if !IsSupported(cert) {
-			continue
-		}
-		for _, crlURL := range cert.CRLDistributionPoints {
-			_, err := crlFetcher.Fetch(ctx, crlURL)
-			if err != nil {
-				// Log error but do not return. Ensure unblock on CRL download failure
-				logger.GetLogger(ctx, logOpt).Warnf("failed to download CRL from %s: %v", crlURL, err)
-			}
-		}
-	}
 }
