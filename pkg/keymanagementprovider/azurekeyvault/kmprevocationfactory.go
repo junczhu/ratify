@@ -52,7 +52,7 @@ func (f *RevocationFactoryImpl) NewFetcher() (corecrl.Fetcher, error) {
 }
 
 // NewValidator is not used by Azure Key Vault case. Not implemented.
-func (f *RevocationFactoryImpl) NewValidator(opts revocation.Options) (revocation.Validator, error) {
+func (f *RevocationFactoryImpl) NewValidator(_ revocation.Options) (revocation.Validator, error) {
 	return nil, nil
 }
 
