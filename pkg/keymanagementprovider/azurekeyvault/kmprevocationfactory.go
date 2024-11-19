@@ -28,27 +28,26 @@ type RevocationFactoryImpl struct {
 	Fetcher     corecrl.Fetcher
 }
 
-// NewRevocationFactoryImpl returns a new NewRevocationFactoryImpl instance
+// NewRevocationFactoryImpl returns a new NewRevocationFactoryImpl instance. Enable cache by default.
 func NewRevocationFactoryImpl() nv.RevocationFactory {
-	// Enable cache by default
 	return &RevocationFactoryImpl{EnableCache: true}
 }
 
+// NewFetcher creates a new instance of a Fetcher if it doesn't already exist.
+// If a Fetcher instance is already present, it returns the existing instance.
+// The method also configures the cache for the Fetcher.
+// Returns an instance of corecrl.Fetcher or an error if the Fetcher creation fails.
 func (f *RevocationFactoryImpl) NewFetcher() (corecrl.Fetcher, error) {
 	if f.Fetcher != nil {
 		return f.Fetcher, nil
 	}
-	fetcher, err := nv.NewRevocationFactoryImpl().NewFetcher()
+	fetcher, err := f.createFetcher()
 	if err != nil {
 		return nil, err
 	}
 	f.Fetcher = fetcher
-	if !f.EnableCache {
-		if httpFetcher, ok := f.Fetcher.(*corecrl.HTTPFetcher); ok {
-			httpFetcher.Cache = nil
-		}
-	}
-	return f.Fetcher, nil
+	f.configureCache()
+	return fetcher, nil
 }
 
 // NewValidator is not used by Azure Key Vault case. Not implemented.
@@ -59,4 +58,21 @@ func (f *RevocationFactoryImpl) NewValidator(_ revocation.Options) (revocation.V
 // IsSupported checks if the certificate supports CRL
 func IsSupported(cert *x509.Certificate) bool {
 	return cert != nil && len(cert.CRLDistributionPoints) > 0
+}
+
+// createFetcher creates a new Fetcher instance using the NewRevocationFactoryImpl method
+// from the nv package. It returns a Fetcher and an error if the creation fails.
+func (f *RevocationFactoryImpl) createFetcher() (corecrl.Fetcher, error) {
+	return nv.NewRevocationFactoryImpl().NewFetcher()
+}
+
+// configureCache disables the cache for the HTTPFetcher if caching is not enabled.
+// If the EnableCache field is set to false, this method sets the Cache field of the
+// HTTPFetcher to nil, effectively disabling caching for HTTP fetch operations.
+func (f *RevocationFactoryImpl) configureCache() {
+	if !f.EnableCache {
+		if httpFetcher, ok := f.Fetcher.(*corecrl.HTTPFetcher); ok {
+			httpFetcher.Cache = nil
+		}
+	}
 }
