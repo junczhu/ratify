@@ -71,6 +71,7 @@ func (f *RevocationFactoryImpl) createFetcher() (corecrl.Fetcher, error) {
 // HTTPFetcher to nil, effectively disabling caching for HTTP fetch operations.
 func (f *RevocationFactoryImpl) configureCache() {
 	if !f.EnableCache {
+		f.createFetcher()
 		if httpFetcher, ok := f.Fetcher.(*corecrl.HTTPFetcher); ok {
 			httpFetcher.Cache = nil
 		}
