@@ -323,8 +323,8 @@ func TestGetCertificates(t *testing.T) {
 						Version: "c1f03df1113d460491d970737dfdc35d",
 					},
 				},
-				kvClient:          tc.mockKvClient,
-				revocationFactory: NewRevocationFactoryImpl(),
+				kvClient:   tc.mockKvClient,
+				CRLHandler: NewCRLHandler(),
 			}
 
 			_, _, err := provider.GetCertificates(context.Background())

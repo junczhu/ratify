@@ -69,17 +69,17 @@ type AKVKeyManagementProviderConfig struct {
 }
 
 type akvKMProvider struct {
-	provider          string
-	vaultURI          string
-	tenantID          string
-	clientID          string
-	cloudName         string
-	resource          string
-	certificates      []types.KeyVaultValue
-	keys              []types.KeyVaultValue
-	cloudEnv          *azure.Environment
-	kvClient          kvClient
-	revocationFactory nv.RevocationFactory
+	provider     string
+	vaultURI     string
+	tenantID     string
+	clientID     string
+	cloudName    string
+	resource     string
+	certificates []types.KeyVaultValue
+	keys         []types.KeyVaultValue
+	cloudEnv     *azure.Environment
+	kvClient     kvClient
+	CRLHandler   nv.RevocationFactory
 }
 
 type akvKMProviderFactory struct{}
@@ -145,16 +145,16 @@ func (f *akvKMProviderFactory) Create(_ string, keyManagementProviderConfig conf
 	}
 
 	provider := &akvKMProvider{
-		provider:          ProviderName,
-		vaultURI:          strings.TrimSpace(conf.VaultURI),
-		tenantID:          strings.TrimSpace(conf.TenantID),
-		clientID:          strings.TrimSpace(conf.ClientID),
-		cloudName:         strings.TrimSpace(conf.CloudName),
-		certificates:      conf.Certificates,
-		keys:              conf.Keys,
-		cloudEnv:          azureCloudEnv,
-		resource:          conf.Resource,
-		revocationFactory: NewRevocationFactoryImpl(),
+		provider:     ProviderName,
+		vaultURI:     strings.TrimSpace(conf.VaultURI),
+		tenantID:     strings.TrimSpace(conf.TenantID),
+		clientID:     strings.TrimSpace(conf.ClientID),
+		cloudName:    strings.TrimSpace(conf.CloudName),
+		certificates: conf.Certificates,
+		keys:         conf.Keys,
+		cloudEnv:     azureCloudEnv,
+		resource:     conf.Resource,
+		CRLHandler:   NewCRLHandler(),
 	}
 	if err := provider.validate(); err != nil {
 		return nil, err
@@ -209,8 +209,7 @@ func (s *akvKMProvider) GetCertificates(ctx context.Context) (map[kmp.KMPMapKey]
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to get certificates from secret bundle:%w", err)
 		}
-		f := s.revocationFactory
-		crlFetcher, err := f.NewFetcher()
+		crlFetcher, err := s.CRLHandler.NewFetcher()
 		if err != nil {
 			return nil, nil, err
 		}
