@@ -36,6 +36,7 @@ var logOpt = logger.Option{
 type trustStore struct {
 	certPaths  []string
 	certStores certStores
+	crlHandler RevocationFactory
 }
 
 func newTrustStore(certPaths []string, verificationCertStores verificationCertStores) (*trustStore, error) {
@@ -46,6 +47,7 @@ func newTrustStore(certPaths []string, verificationCertStores verificationCertSt
 	store := &trustStore{
 		certPaths:  certPaths,
 		certStores: certStores,
+		crlHandler: NewCRLHandler(),
 	}
 	return store, nil
 }
@@ -98,11 +100,17 @@ func (s *trustStore) getCertificatesInternal(ctx context.Context, storeType trus
 			return certs, fmt.Errorf("no certificates fetched in namedStore: %+v", namedStore)
 		}
 	} else {
+		crlFetcher, err := s.crlHandler.NewFetcher()
+		if err != nil {
+			return nil, err
+		}
 		for _, path := range s.certPaths {
 			bundledCerts, err := utils.GetCertificatesFromPath(path)
 			if err != nil {
 				return nil, err
 			}
+			// fetch CRLs and cache them
+			CacheCRL(ctx, bundledCerts, crlFetcher) // Unblock on CRL download failure in kmpprovider
 			certs = append(certs, bundledCerts...)
 		}
 	}

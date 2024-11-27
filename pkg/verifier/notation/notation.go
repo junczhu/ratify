@@ -105,7 +105,7 @@ func (f *notationPluginVerifierFactory) Create(_ string, verifierConfig config.V
 	if err != nil {
 		return nil, re.ErrorCodePluginInitFailure.WithDetail("Failed to create the Notation Verifier").WithError(err)
 	}
-	verifyService, err := getVerifierService(conf, pluginDirectory, NewRevocationFactoryImpl())
+	verifyService, err := getVerifierService(conf, pluginDirectory, NewCRLHandler())
 	if err != nil {
 		return nil, re.ErrorCodePluginInitFailure.WithDetail("Failed to create the Notation Verifier").WithError(err)
 	}

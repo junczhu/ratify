@@ -24,6 +24,7 @@ import (
 
 	re "github.com/ratify-project/ratify/errors"
 	kmp "github.com/ratify-project/ratify/pkg/keymanagementprovider"
+	nv "github.com/ratify-project/ratify/pkg/verifier/notation"
 	"github.com/sirupsen/logrus"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
@@ -35,11 +36,12 @@ type KubeRefresher struct {
 	Resource                string
 	Result                  ctrl.Result
 	Status                  kmp.KeyManagementProviderStatus
+	CRLHandler              nv.RevocationFactory
 }
 
 // Register registers the kubeRefresher factory
 func init() {
-	Register(KubeRefresherType, &KubeRefresher{})
+	Register(KubeRefresherType, &KubeRefresher{CRLHandler: nv.NewCRLHandler()})
 }
 
 // Refresh the certificates/keys for the key management provider by calling the GetCertificates and GetKeys methods
@@ -54,6 +56,14 @@ func (kr *KubeRefresher) Refresh(ctx context.Context) error {
 		return kmpErr
 	}
 
+	// fetch CRLs and cache them
+	crlFetcher, err := kr.CRLHandler.NewFetcher()
+	if err != nil {
+		return err
+	}
+	for _, cert := range certificates {
+		nv.CacheCRL(ctx, cert, crlFetcher) // Unblock on CRL download failure in kmpprovider
+	}
 	// fetch keys and store in map
 	keys, keyAttributes, err := kr.Provider.GetKeys(ctx)
 	if err != nil {

@@ -39,7 +39,6 @@ import (
 	"github.com/ratify-project/ratify/pkg/keymanagementprovider/config"
 	"github.com/ratify-project/ratify/pkg/keymanagementprovider/factory"
 	"github.com/ratify-project/ratify/pkg/metrics"
-	nv "github.com/ratify-project/ratify/pkg/verifier/notation"
 	"golang.org/x/crypto/pkcs12"
 
 	kv "github.com/Azure/azure-sdk-for-go/services/keyvault/v7.1/keyvault"
@@ -79,7 +78,6 @@ type akvKMProvider struct {
 	keys         []types.KeyVaultValue
 	cloudEnv     *azure.Environment
 	kvClient     kvClient
-	CRLHandler   nv.RevocationFactory
 }
 
 type akvKMProviderFactory struct{}
@@ -154,7 +152,6 @@ func (f *akvKMProviderFactory) Create(_ string, keyManagementProviderConfig conf
 		keys:         conf.Keys,
 		cloudEnv:     azureCloudEnv,
 		resource:     conf.Resource,
-		CRLHandler:   NewCRLHandler(),
 	}
 	if err := provider.validate(); err != nil {
 		return nil, err
@@ -209,11 +206,6 @@ func (s *akvKMProvider) GetCertificates(ctx context.Context) (map[kmp.KMPMapKey]
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to get certificates from secret bundle:%w", err)
 		}
-		crlFetcher, err := s.CRLHandler.NewFetcher()
-		if err != nil {
-			return nil, nil, err
-		}
-		kmp.CacheCRL(ctx, certResult, crlFetcher) // Unblock on CRL download failure in kmpprovider
 		metrics.ReportAKVCertificateDuration(ctx, time.Since(startTime).Milliseconds(), keyVaultCert.Name)
 		certsStatus = append(certsStatus, certProperty...)
 		certMapKey := kmp.KMPMapKey{Name: keyVaultCert.Name, Version: keyVaultCert.Version, Enabled: isEnabled}

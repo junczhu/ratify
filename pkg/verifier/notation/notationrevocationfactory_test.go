@@ -23,7 +23,7 @@ import (
 )
 
 func TestNewRevocationFactoryImpl(t *testing.T) {
-	factory := NewRevocationFactoryImpl()
+	factory := NewCRLHandler()
 	assert.NotNil(t, factory)
 }
 
@@ -50,10 +50,7 @@ func TestNewFetcher(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := &RevocationFactoryImpl{
-				cacheRoot:  tt.cacheRoot,
-				httpClient: tt.httpClient,
-			}
+			factory := NewCRLHandler()
 
 			fetcher, err := factory.NewFetcher()
 			if tt.wantErr {
@@ -65,7 +62,7 @@ func TestNewFetcher(t *testing.T) {
 }
 
 func TestNewValidator(t *testing.T) {
-	factory := &RevocationFactoryImpl{}
+	factory := NewCRLHandler()
 	opts := revocation.Options{}
 
 	validator, err := factory.NewValidator(opts)
