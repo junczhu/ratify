@@ -29,6 +29,7 @@ import (
 	"github.com/ratify-project/ratify/pkg/keymanagementprovider/config"
 	_ "github.com/ratify-project/ratify/pkg/keymanagementprovider/inline"
 	mock "github.com/ratify-project/ratify/pkg/keymanagementprovider/mocks"
+	nv "github.com/ratify-project/ratify/pkg/verifier/notation"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -130,6 +131,7 @@ func TestKubeRefresher_Refresh(t *testing.T) {
 				ProviderType:            tt.providerType,
 				ProviderRefreshInterval: tt.providerRefreshInterval,
 				Resource:                "kmpname",
+				CRLHandler:              nv.NewCRLHandler(),
 			}
 
 			err := kr.Refresh(context.Background())
@@ -146,7 +148,8 @@ func TestKubeRefresher_Refresh(t *testing.T) {
 
 func TestKubeRefresher_GetResult(t *testing.T) {
 	kr := &KubeRefresher{
-		Result: ctrl.Result{RequeueAfter: time.Minute},
+		Result:     ctrl.Result{RequeueAfter: time.Minute},
+		CRLHandler: nv.NewCRLHandler(),
 	}
 
 	result := kr.GetResult()
@@ -162,6 +165,7 @@ func TestKubeRefresher_GetStatus(t *testing.T) {
 			"attribute1": "value1",
 			"attribute2": "value2",
 		},
+		CRLHandler: nv.NewCRLHandler(),
 	}
 
 	status := kr.GetStatus()
@@ -210,7 +214,7 @@ func TestKubeRefresher_Create(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			kr := &KubeRefresher{}
+			kr := &KubeRefresher{CRLHandler: nv.NewCRLHandler()}
 			refresher, err := kr.Create(tt.config)
 			if err != nil {
 				t.Fatalf("Expected no error, but got %v", err)
