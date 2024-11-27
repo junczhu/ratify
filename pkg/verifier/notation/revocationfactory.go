@@ -14,6 +14,8 @@
 package notation
 
 import (
+	"net/http"
+
 	"github.com/notaryproject/notation-core-go/revocation"
 	corecrl "github.com/notaryproject/notation-core-go/revocation/crl"
 )
@@ -24,4 +26,17 @@ type RevocationFactory interface {
 
 	// NewValidator returns a new validator instance
 	NewValidator(revocation.Options) (revocation.Validator, error)
+}
+
+// NewFetcher returns a new fetcher instance
+func NewFetcher(httpClient *http.Client, cacheRoot string) (corecrl.Fetcher, error) {
+	crlFetcher, err := corecrl.NewHTTPFetcher(httpClient)
+	if err != nil {
+		return nil, err
+	}
+	crlFetcher.Cache, err = newFileCache(cacheRoot)
+	if err != nil {
+		return nil, err
+	}
+	return crlFetcher, nil
 }

@@ -37,15 +37,7 @@ func NewRevocationFactoryImpl() RevocationFactory {
 
 // NewFetcher returns a new fetcher instance
 func (f *RevocationFactoryImpl) NewFetcher() (corecrl.Fetcher, error) {
-	crlFetcher, err := corecrl.NewHTTPFetcher(f.httpClient)
-	if err != nil {
-		return nil, err
-	}
-	crlFetcher.Cache, err = newFileCache(f.cacheRoot)
-	if err != nil {
-		return nil, err
-	}
-	return crlFetcher, nil
+	return NewFetcher(f.httpClient, f.cacheRoot)
 }
 
 // NewValidator returns a new validator instance

@@ -16,6 +16,7 @@ limitations under the License.
 package azurekeyvault
 
 import (
+	"net/http"
 	"sync"
 
 	"github.com/notaryproject/notation-core-go/revocation"
@@ -26,13 +27,14 @@ import (
 type CRLHandler struct {
 	EnableCache bool
 	Fetcher     corecrl.Fetcher
+	httpClient  *http.Client
 }
 
 var fetcherOnce sync.Once
 
 // NewCRLHandler returns a new NewCRLHandler instance. Enable cache by default.
 func NewCRLHandler() nv.RevocationFactory {
-	return &CRLHandler{EnableCache: true}
+	return &CRLHandler{EnableCache: true, httpClient: &http.Client{}}
 }
 
 // NewFetcher creates a new instance of a Fetcher if it doesn't already exist.
@@ -63,7 +65,7 @@ func (h *CRLHandler) NewValidator(_ revocation.Options) (revocation.Validator, e
 // createFetcher creates a new Fetcher instance using the NewRevocationFactoryImpl method
 // from the nv package. It returns a Fetcher or an error if the creation fails.
 func (h *CRLHandler) createFetcher() (corecrl.Fetcher, error) {
-	return nv.NewRevocationFactoryImpl().NewFetcher()
+	return nv.NewFetcher(h.httpClient, "")
 }
 
 // configureCache disables the cache for the HTTPFetcher if caching is not enabled.
