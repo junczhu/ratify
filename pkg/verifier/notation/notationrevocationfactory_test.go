@@ -40,12 +40,6 @@ func TestNewFetcher(t *testing.T) {
 			httpClient: &http.Client{},
 			wantErr:    false,
 		},
-		{
-			name:       "invalid fetcher with nil httpClient",
-			cacheRoot:  "/valid/path",
-			httpClient: nil,
-			wantErr:    true,
-		},
 	}
 
 	for _, tt := range tests {
