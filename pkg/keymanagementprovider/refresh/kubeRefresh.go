@@ -41,7 +41,7 @@ type KubeRefresher struct {
 
 // Register registers the kubeRefresher factory
 func init() {
-	Register(KubeRefresherType, &KubeRefresher{CRLHandler: nv.NewCRLHandler()})
+	Register(KubeRefresherType, &KubeRefresher{})
 }
 
 // Refresh the certificates/keys for the key management provider by calling the GetCertificates and GetKeys methods
@@ -119,5 +119,6 @@ func (kr *KubeRefresher) Create(config RefresherConfig) (Refresher, error) {
 		ProviderType:            config.ProviderType,
 		ProviderRefreshInterval: config.ProviderRefreshInterval,
 		Resource:                config.Resource,
+		CRLHandler:              nv.NewCRLHandler(),
 	}, nil
 }
