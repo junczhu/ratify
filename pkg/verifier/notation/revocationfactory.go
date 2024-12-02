@@ -26,6 +26,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// RevocationFactory is an interface that defines methods for creating instances
+// related to revocation. It provides methods to create a new fetcher and a new
+// validator.
 type RevocationFactory interface {
 	// NewFetcher returns a new fetcher instance
 	NewFetcher() (corecrl.Fetcher, error)
@@ -54,27 +57,35 @@ func SupportCRL(cert *x509.Certificate) bool {
 
 // cacheCRL caches the Certificate Revocation Lists (CRLs) for the given certificates using the provided CRL fetcher.
 // It logs a warning if fetching the CRL fails but does not return an error to ensure the process is not blocked.
-func CacheCRL(ctx context.Context, certs []*x509.Certificate, crlFetcher corecrl.Fetcher) {
+func CacheCRL(ctx context.Context, certs []*x509.Certificate, fetcher corecrl.Fetcher) {
 	logger := logrus.WithContext(ctx)
-
+	if fetcher == nil {
+		logger.Warn("CRL fetcher is nil")
+		return
+	}
 	var wg sync.WaitGroup
 	for _, cert := range certs {
-		// check if the certificate supports CRL
-		if !SupportCRL(cert) {
-			continue
-		}
-		for _, crlURL := range cert.CRLDistributionPoints {
-			wg.Add(1)
-			go func(url string) {
-				defer wg.Done()
-				if _, err := crlFetcher.Fetch(ctx, url); err != nil {
-					// Log error but do not return. Ensure unblock on CRL download failure
-					logger.Infof("failed to download CRL from %s: %v", url, err)
-				}
-			}(crlURL)
-		}
+		cacheCertificateCRL(ctx, cert, fetcher, &wg, logger)
 	}
 	wg.Wait()
+}
+
+func cacheCertificateCRL(ctx context.Context, cert *x509.Certificate, crlFetcher corecrl.Fetcher, wg *sync.WaitGroup, logger *logrus.Entry) {
+	if !SupportCRL(cert) {
+		return
+	}
+	for _, crlURL := range cert.CRLDistributionPoints {
+		crlURL := crlURL // capture loop variable
+		wg.Add(1)
+		go fetchCRL(ctx, cert, crlURL, crlFetcher, wg, logger)
+	}
+}
+
+func fetchCRL(ctx context.Context, cert *x509.Certificate, url string, crlFetcher corecrl.Fetcher, wg *sync.WaitGroup, logger *logrus.Entry) {
+	defer wg.Done()
+	if _, err := crlFetcher.Fetch(ctx, url); err != nil {
+		logger.Infof("failed to download CRL from %s for certificate %s : %v", url, cert.Subject.CommonName, err)
+	}
 }
 
 // newFileCache returns a new file cache instance

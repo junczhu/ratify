@@ -23,16 +23,16 @@ import (
 )
 
 type CRLHandler struct {
-	EnableCache bool
-	Fetcher     corecrl.Fetcher
-	httpClient  *http.Client
+	CacheEnabled bool
+	Fetcher      corecrl.Fetcher
+	httpClient   *http.Client
 }
 
 var fetcherOnce sync.Once
 
 // NewCRLHandler returns a new NewCRLHandler instance. Enable cache by default.
 func NewCRLHandler() RevocationFactory {
-	return &CRLHandler{EnableCache: true, httpClient: &http.Client{}}
+	return &CRLHandler{CacheEnabled: true, httpClient: &http.Client{}}
 }
 
 // NewFetcher creates a new instance of a Fetcher if it doesn't already exist.
@@ -64,7 +64,7 @@ func (h *CRLHandler) NewValidator(opts revocation.Options) (revocation.Validator
 // If the EnableCache field is set to false, this method sets the Cache field of the
 // HTTPFetcher to nil, effectively disabling caching for HTTP fetch operations.
 func (h *CRLHandler) configureCache() {
-	if !h.EnableCache {
+	if !h.CacheEnabled {
 		if httpFetcher, ok := h.Fetcher.(*corecrl.HTTPFetcher); ok {
 			httpFetcher.Cache = nil
 		}
