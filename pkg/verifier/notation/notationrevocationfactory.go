@@ -50,7 +50,7 @@ func (h *CRLHandler) NewFetcher() (corecrl.Fetcher, error) {
 		}
 	})
 	if err != nil {
-		return nil, err
+		return &corecrl.HTTPFetcher{}, err
 	}
 	return h.Fetcher, nil
 }
