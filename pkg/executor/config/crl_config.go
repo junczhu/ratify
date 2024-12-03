@@ -16,13 +16,15 @@ limitations under the License.
 package config
 
 type CRLConfig struct {
-	Type        string            `json:"type,omitempty"`
-	EnableCache bool              `json:"enable_cache,omitempty"`
-	Refreshable bool              `json:"refreshable,omitempty"`
-	HTTPRequest HTTPRequestConfig `json:"http_request,omitempty"`
+	Type              string            `json:"type,omitempty"`
+	CacheEnabled      bool              `json:"cache_enabled,omitempty"`
+	RefreshConfig     RefreshConfig     `json:"refresh_config,omitempty"`
+	HTTPRequestConfig HTTPRequestConfig `json:"http_request_config,omitempty"`
 }
 
 type HTTPRequestConfig struct {
 	Timeout    int `json:"timeout,omitempty"`
 	RetryCount int `json:"retry_count,omitempty"`
 }
+
+type RefreshConfig struct{}

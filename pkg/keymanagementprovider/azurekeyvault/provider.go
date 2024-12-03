@@ -65,7 +65,6 @@ type AKVKeyManagementProviderConfig struct {
 	Resource     string                `json:"resource,omitempty"`
 	Certificates []types.KeyVaultValue `json:"certificates,omitempty"`
 	Keys         []types.KeyVaultValue `json:"keys,omitempty"`
-	CRL          config.CRLConfig      `json:"crl,omitempty"`
 }
 
 type akvKMProvider struct {

@@ -21,5 +21,7 @@ type ExecutorConfig struct {
 	VerificationRequestTimeout *int `json:"verificationRequestTimeout"`
 	// Gatekeeper default mutation webhook timeout is 1 seconds. 50ms network buffer added
 	MutationRequestTimeout *int `json:"mutationRequestTimeout"`
+	// CRL config
+	CRLConfig *CRLConfig `json:"crlConfig,omitempty"`
 	// TODO Add cache config
 }
