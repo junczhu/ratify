@@ -102,7 +102,8 @@ func (s *trustStore) getCertificatesInternal(ctx context.Context, storeType trus
 	} else {
 		crlFetcher, err := s.crlHandler.NewFetcher()
 		if err != nil {
-			return nil, err
+			// log error and continue
+			logger.GetLogger(context.Background(), logOpt).Warnf("Unable to create CRL fetcher for notation truststore %s with error: %s", namedStore, err)
 		}
 		for _, path := range s.certPaths {
 			bundledCerts, err := utils.GetCertificatesFromPath(path)

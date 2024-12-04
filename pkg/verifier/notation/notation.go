@@ -190,7 +190,8 @@ func getVerifierService(conf *NotationPluginVerifierConfig, pluginDirectory stri
 	// Related File: https://github.com/notaryproject/notation/commits/main/cmd/notation/verify.go5
 	crlFetcher, err := revocationFactory.NewFetcher()
 	if err != nil {
-		return nil, err
+		// log error and continue
+		logger.GetLogger(context.Background(), logOpt).Warnf("Unable to create CRL fetcher for notation verifier %s with error: %s", conf.Name, err)
 	}
 	revocationCodeSigningValidator, err := revocationFactory.NewValidator(revocation.Options{
 		CRLFetcher:       crlFetcher,

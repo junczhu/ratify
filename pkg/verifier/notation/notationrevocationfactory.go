@@ -20,6 +20,7 @@ import (
 	"github.com/notaryproject/notation-core-go/revocation"
 	corecrl "github.com/notaryproject/notation-core-go/revocation/crl"
 	"github.com/notaryproject/notation-go/dir"
+	re "github.com/ratify-project/ratify/errors"
 )
 
 type CRLHandler struct {
@@ -42,15 +43,19 @@ func NewCRLHandler() RevocationFactory {
 func (h *CRLHandler) NewFetcher() (corecrl.Fetcher, error) {
 	var err error
 	fetcherOnce.Do(func() {
-		if h.Fetcher == nil {
-			h.Fetcher, err = NewFetcher(h.httpClient, dir.PathCRLCache)
-			if err == nil {
-				h.configureCache()
-			}
+		h.Fetcher, err = NewFetcher(h.httpClient, dir.PathCRLCache)
+		if err == nil {
+			h.configureCache()
 		}
 	})
 	if err != nil {
-		return &corecrl.HTTPFetcher{}, err
+		return nil, err
+	}
+	// Check if the fetcher is nil, return an error if it is.
+	// one possible edge case is that an error happened in the first call,
+	// the following calls will not get the error since the sync.Once block will be skipped.
+	if h.Fetcher == nil {
+		return nil, re.ErrorCodeConfigInvalid.WithComponentType(re.CRL).WithDetail("failed to create CRL fetcher")
 	}
 	return h.Fetcher, nil
 }

@@ -52,6 +52,7 @@ const (
 	PolicyProvider        ComponentType = "policyProvider"
 	CertProvider          ComponentType = "certProvider"
 	KeyManagementProvider ComponentType = "keyManagementProvider"
+	CRL                   ComponentType = "crl"
 )
 
 // ErrorCode represents the error type. The errors are serialized via strings
