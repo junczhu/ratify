@@ -23,7 +23,7 @@ import (
 	corecrl "github.com/notaryproject/notation-core-go/revocation/crl"
 	"github.com/notaryproject/notation-go/dir"
 	"github.com/notaryproject/notation-go/verifier/crl"
-	"github.com/sirupsen/logrus"
+	"github.com/ratify-project/ratify/internal/logger"
 )
 
 // RevocationFactory is an interface that defines methods for creating instances
@@ -58,33 +58,32 @@ func SupportCRL(cert *x509.Certificate) bool {
 // cacheCRL caches the Certificate Revocation Lists (CRLs) for the given certificates using the provided CRL fetcher.
 // It logs a warning if fetching the CRL fails but does not return an error to ensure the process is not blocked.
 func CacheCRL(ctx context.Context, certs []*x509.Certificate, fetcher corecrl.Fetcher) {
-	logger := logrus.WithContext(ctx)
 	if fetcher == nil {
-		logger.Warn("CRL fetcher is nil")
+		logger.GetLogger(ctx, logOpt).Warn("CRL fetcher is nil")
 		return
 	}
 	var wg sync.WaitGroup
 	for _, cert := range certs {
-		cacheCertificateCRL(ctx, cert, fetcher, &wg, logger)
+		if !SupportCRL(cert) {
+			return
+		}
+		cacheCertificateCRL(ctx, cert.CRLDistributionPoints, fetcher, &wg)
 	}
 	wg.Wait()
 }
 
-func cacheCertificateCRL(ctx context.Context, cert *x509.Certificate, crlFetcher corecrl.Fetcher, wg *sync.WaitGroup, logger *logrus.Entry) {
-	if !SupportCRL(cert) {
-		return
-	}
-	for _, crlURL := range cert.CRLDistributionPoints {
+func cacheCertificateCRL(ctx context.Context, crlURLs []string, crlFetcher corecrl.Fetcher, wg *sync.WaitGroup) {
+	for _, crlURL := range crlURLs {
 		crlURL := crlURL // capture loop variable
 		wg.Add(1)
-		go fetchCRL(ctx, cert, crlURL, crlFetcher, wg, logger)
+		go fetchCRL(ctx, crlURL, crlFetcher, wg)
 	}
 }
 
-func fetchCRL(ctx context.Context, cert *x509.Certificate, url string, crlFetcher corecrl.Fetcher, wg *sync.WaitGroup, logger *logrus.Entry) {
+func fetchCRL(ctx context.Context, url string, crlFetcher corecrl.Fetcher, wg *sync.WaitGroup) {
 	defer wg.Done()
 	if _, err := crlFetcher.Fetch(ctx, url); err != nil {
-		logger.Infof("failed to download CRL from %s for certificate %s : %v", url, cert.Subject.CommonName, err)
+		logger.GetLogger(ctx, logOpt).Errorf("failed to download CRL from %s : %v", url, err)
 	}
 }
 

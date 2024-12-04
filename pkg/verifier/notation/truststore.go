@@ -103,7 +103,7 @@ func (s *trustStore) getCertificatesInternal(ctx context.Context, storeType trus
 		crlFetcher, err := s.crlHandler.NewFetcher()
 		if err != nil {
 			// log error and continue
-			logger.GetLogger(context.Background(), logOpt).Warnf("Unable to create CRL fetcher for notation truststore %s with error: %s", namedStore, err)
+			logger.GetLogger(ctx, logOpt).Warnf("Unable to create CRL fetcher for notation truststore %s with error: %s", namedStore, err)
 		}
 		for _, path := range s.certPaths {
 			bundledCerts, err := utils.GetCertificatesFromPath(path)
@@ -111,7 +111,7 @@ func (s *trustStore) getCertificatesInternal(ctx context.Context, storeType trus
 				return nil, err
 			}
 			// fetch CRLs and cache them
-			CacheCRL(ctx, bundledCerts, crlFetcher) // Unblock on CRL download failure in kmpprovider
+			CacheCRL(ctx, bundledCerts, crlFetcher)
 			certs = append(certs, bundledCerts...)
 		}
 	}

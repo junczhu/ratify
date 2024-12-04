@@ -55,7 +55,7 @@ func (h *CRLHandler) NewFetcher() (corecrl.Fetcher, error) {
 	// one possible edge case is that an error happened in the first call,
 	// the following calls will not get the error since the sync.Once block will be skipped.
 	if h.Fetcher == nil {
-		return nil, re.ErrorCodeConfigInvalid.WithComponentType(re.CRL).WithDetail("failed to create CRL fetcher")
+		return nil, re.ErrorCodeConfigInvalid.WithDetail("failed to create CRL fetcher")
 	}
 	return h.Fetcher, nil
 }

@@ -21,10 +21,14 @@ import (
 	"crypto"
 	"crypto/x509"
 	"errors"
+	"net/http"
 	"reflect"
 	"testing"
 	"time"
 
+	"github.com/notaryproject/notation-core-go/revocation"
+	corecrl "github.com/notaryproject/notation-core-go/revocation/crl"
+	re "github.com/ratify-project/ratify/errors"
 	"github.com/ratify-project/ratify/pkg/keymanagementprovider"
 	"github.com/ratify-project/ratify/pkg/keymanagementprovider/config"
 	_ "github.com/ratify-project/ratify/pkg/keymanagementprovider/inline"
@@ -42,6 +46,7 @@ func TestKubeRefresher_Refresh(t *testing.T) {
 		GetCertsFunc            func(_ context.Context) (map[keymanagementprovider.KMPMapKey][]*x509.Certificate, keymanagementprovider.KeyManagementProviderStatus, error)
 		GetKeysFunc             func(_ context.Context) (map[keymanagementprovider.KMPMapKey]crypto.PublicKey, keymanagementprovider.KeyManagementProviderStatus, error)
 		IsRefreshableFunc       func() bool
+		NewCRLHandler           nv.RevocationFactory
 		expectedResult          ctrl.Result
 		expectedError           bool
 	}{
@@ -50,6 +55,7 @@ func TestKubeRefresher_Refresh(t *testing.T) {
 			providerRawParameters: []byte(`{"contentType": "certificate", "value": "-----BEGIN CERTIFICATE-----\nMIID2jCCAsKgAwIBAgIQXy2VqtlhSkiZKAGhsnkjbDANBgkqhkiG9w0BAQsFADBvMRswGQYDVQQD\nExJyYXRpZnkuZXhhbXBsZS5jb20xDzANBgNVBAsTBk15IE9yZzETMBEGA1UEChMKTXkgQ29tcGFu\neTEQMA4GA1UEBxMHUmVkbW9uZDELMAkGA1UECBMCV0ExCzAJBgNVBAYTAlVTMB4XDTIzMDIwMTIy\nNDUwMFoXDTI0MDIwMTIyNTUwMFowbzEbMBkGA1UEAxMScmF0aWZ5LmV4YW1wbGUuY29tMQ8wDQYD\nVQQLEwZNeSBPcmcxEzARBgNVBAoTCk15IENvbXBhbnkxEDAOBgNVBAcTB1JlZG1vbmQxCzAJBgNV\nBAgTAldBMQswCQYDVQQGEwJVUzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAL10bM81\npPAyuraORABsOGS8M76Bi7Guwa3JlM1g2D8CuzSfSTaaT6apy9GsccxUvXd5cmiP1ffna5z+EFmc\nizFQh2aq9kWKWXDvKFXzpQuhyqD1HeVlRlF+V0AfZPvGt3VwUUjNycoUU44ctCWmcUQP/KShZev3\n6SOsJ9q7KLjxxQLsUc4mg55eZUThu8mGB8jugtjsnLUYvIWfHhyjVpGrGVrdkDMoMn+u33scOmrt\nsBljvq9WVo4T/VrTDuiOYlAJFMUae2Ptvo0go8XTN3OjLblKeiK4C+jMn9Dk33oGIT9pmX0vrDJV\nX56w/2SejC1AxCPchHaMuhlwMpftBGkCAwEAAaNyMHAwDgYDVR0PAQH/BAQDAgeAMAkGA1UdEwQC\nMAAwEwYDVR0lBAwwCgYIKwYBBQUHAwMwHwYDVR0jBBgwFoAU0eaKkZj+MS9jCp9Dg1zdv3v/aKww\nHQYDVR0OBBYEFNHmipGY/jEvYwqfQ4Nc3b97/2isMA0GCSqGSIb3DQEBCwUAA4IBAQBNDcmSBizF\nmpJlD8EgNcUCy5tz7W3+AAhEbA3vsHP4D/UyV3UgcESx+L+Nye5uDYtTVm3lQejs3erN2BjW+ds+\nXFnpU/pVimd0aYv6mJfOieRILBF4XFomjhrJOLI55oVwLN/AgX6kuC3CJY2NMyJKlTao9oZgpHhs\nLlxB/r0n9JnUoN0Gq93oc1+OLFjPI7gNuPXYOP1N46oKgEmAEmNkP1etFrEjFRgsdIFHksrmlOlD\nIed9RcQ087VLjmuymLgqMTFX34Q3j7XgN2ENwBSnkHotE9CcuGRW+NuiOeJalL8DBmFXXWwHTKLQ\nPp5g6m1yZXylLJaFLKz7tdMmO355\n-----END CERTIFICATE-----\n"}`),
 			providerType:          "inline",
 			IsRefreshableFunc:     func() bool { return false },
+			NewCRLHandler:         nv.NewCRLHandler(),
 			expectedResult:        ctrl.Result{},
 			expectedError:         false,
 		},
@@ -58,6 +64,7 @@ func TestKubeRefresher_Refresh(t *testing.T) {
 			providerRawParameters:   []byte(`{"vaultURI": "https://yourkeyvault.vault.azure.net/", "certificates": [{"name": "cert1", "version": "1"}], "tenantID": "yourtenantID", "clientID": "yourclientID"}`),
 			providerType:            "test-kmp",
 			providerRefreshInterval: "",
+			NewCRLHandler:           nv.NewCRLHandler(),
 			IsRefreshableFunc:       func() bool { return true },
 			expectedResult:          ctrl.Result{},
 			expectedError:           false,
@@ -67,6 +74,7 @@ func TestKubeRefresher_Refresh(t *testing.T) {
 			providerRawParameters:   []byte(`{"vaultURI": "https://yourkeyvault.vault.azure.net/", "certificates": [{"name": "cert1", "version": "1"}], "tenantID": "yourtenantID", "clientID": "yourclientID"}`),
 			providerType:            "test-kmp",
 			providerRefreshInterval: "1m",
+			NewCRLHandler:           nv.NewCRLHandler(),
 			IsRefreshableFunc:       func() bool { return true },
 			expectedResult:          ctrl.Result{RequeueAfter: time.Minute},
 			expectedError:           false,
@@ -76,6 +84,7 @@ func TestKubeRefresher_Refresh(t *testing.T) {
 			providerRawParameters:   []byte(`{"vaultURI": "https://yourkeyvault.vault.azure.net/", "certificates": [{"name": "cert1", "version": "1"}], "tenantID": "yourtenantID", "clientID": "yourclientID"}`),
 			providerType:            "test-kmp",
 			providerRefreshInterval: "1mm",
+			NewCRLHandler:           nv.NewCRLHandler(),
 			IsRefreshableFunc:       func() bool { return true },
 			expectedResult:          ctrl.Result{},
 			expectedError:           true,
@@ -89,6 +98,7 @@ func TestKubeRefresher_Refresh(t *testing.T) {
 			providerRawParameters: []byte(`{"vaultURI": "https://yourkeyvault.vault.azure.net/", "certificates": [{"name": "cert1", "version": "1"}], "tenantID": "yourtenantID", "clientID": "yourclientID"}`),
 			providerType:          "test-kmp-error",
 			IsRefreshableFunc:     func() bool { return true },
+			NewCRLHandler:         nv.NewCRLHandler(),
 			expectedError:         true,
 		},
 		{
@@ -100,14 +110,24 @@ func TestKubeRefresher_Refresh(t *testing.T) {
 			providerRawParameters: []byte(`{"vaultURI": "https://yourkeyvault.vault.azure.net/", "certificates": [{"name": "cert1", "version": "1"}], "tenantID": "yourtenantID", "clientID": "yourclientID"}`),
 			providerType:          "test-kmp-error",
 			IsRefreshableFunc:     func() bool { return true },
+			NewCRLHandler:         nv.NewCRLHandler(),
 			expectedError:         true,
+		},
+		{
+			name:                    "Error Caching with CRL Fetcher (non-blocking)",
+			providerRawParameters:   []byte(`{"vaultURI": "https://yourkeyvault.vault.azure.net/", "certificates": [{"name": "cert1", "version": "1"}], "tenantID": "yourtenantID", "clientID": "yourclientID"}`),
+			providerType:            "test-kmp",
+			providerRefreshInterval: "1m",
+			IsRefreshableFunc:       func() bool { return true },
+			NewCRLHandler:           &MockCRLHandler{CacheEnabled: true, httpClient: &http.Client{}},
+			expectedResult:          ctrl.Result{RequeueAfter: time.Minute},
+			expectedError:           false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var factory mock.TestKeyManagementProviderFactory
-
 			if tt.GetCertsFunc != nil {
 				factory = mock.TestKeyManagementProviderFactory{
 					GetCertsFunc:      tt.GetCertsFunc,
@@ -131,7 +151,7 @@ func TestKubeRefresher_Refresh(t *testing.T) {
 				ProviderType:            tt.providerType,
 				ProviderRefreshInterval: tt.providerRefreshInterval,
 				Resource:                "kmpname",
-				CRLHandler:              nv.NewCRLHandler(),
+				CRLHandler:              tt.NewCRLHandler,
 			}
 
 			err := kr.Refresh(context.Background())
@@ -144,6 +164,20 @@ func TestKubeRefresher_Refresh(t *testing.T) {
 			}
 		})
 	}
+}
+
+type MockCRLHandler struct {
+	CacheEnabled bool
+	Fetcher      corecrl.Fetcher
+	httpClient   *http.Client
+}
+
+func (h *MockCRLHandler) NewFetcher() (corecrl.Fetcher, error) {
+	return nil, re.ErrorCodeConfigInvalid.WithComponentType(re.CRL).WithDetail("failed to create CRL fetcher")
+}
+
+func (h *MockCRLHandler) NewValidator(opts revocation.Options) (revocation.Validator, error) {
+	return nil, nil
 }
 
 func TestKubeRefresher_GetResult(t *testing.T) {

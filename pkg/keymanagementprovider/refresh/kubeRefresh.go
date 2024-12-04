@@ -60,10 +60,10 @@ func (kr *KubeRefresher) Refresh(ctx context.Context) error {
 	crlFetcher, err := kr.CRLHandler.NewFetcher()
 	if err != nil {
 		// log error and continue
-		logger.Warnf("Unable to create CRL fetcher for key management provider %s of type %s with error: %s", kr.Resource, kr.ProviderType, err)
+		logger.Warnf("Unable to create CRL fetcher for key management provider %s of type %s with error: %v", kr.Resource, kr.ProviderType, err)
 	}
 	for _, cert := range certificates {
-		nv.CacheCRL(ctx, cert, crlFetcher) // Unblock on CRL download failure in kmpprovider
+		nv.CacheCRL(ctx, cert, crlFetcher)
 	}
 	// fetch keys and store in map
 	keys, keyAttributes, err := kr.Provider.GetKeys(ctx)
