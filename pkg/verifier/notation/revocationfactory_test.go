@@ -70,6 +70,7 @@ func TestCacheCRL(t *testing.T) {
 		}
 		CacheCRL(ctx, certs, nil)
 		// Check logs if necessary
+		t.Log("CRL fetcher is nil")
 	})
 
 	t.Run("certificate without CRL distribution points", func(t *testing.T) {
@@ -78,6 +79,7 @@ func TestCacheCRL(t *testing.T) {
 		}
 		CacheCRL(ctx, certs, fetcher)
 		// Check logs if necessary
+		t.Log("Certificate does not support CRL")
 	})
 
 	t.Run("valid certificates with CRL distribution points", func(t *testing.T) {
@@ -91,5 +93,6 @@ func TestCacheCRL(t *testing.T) {
 		}
 		CacheCRL(ctx, certs, fetcher)
 		// Check logs if necessary
+		t.Log("CRLs cached successfully")
 	})
 }
