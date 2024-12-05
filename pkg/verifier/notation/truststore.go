@@ -36,7 +36,6 @@ var logOpt = logger.Option{
 type trustStore struct {
 	certPaths  []string
 	certStores certStores
-	crlHandler RevocationFactory
 }
 
 func newTrustStore(certPaths []string, verificationCertStores verificationCertStores) (*trustStore, error) {
@@ -47,7 +46,6 @@ func newTrustStore(certPaths []string, verificationCertStores verificationCertSt
 	store := &trustStore{
 		certPaths:  certPaths,
 		certStores: certStores,
-		crlHandler: NewCRLHandler(),
 	}
 	return store, nil
 }
