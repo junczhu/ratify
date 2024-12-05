@@ -37,8 +37,8 @@ type RevocationFactory interface {
 	NewValidator(revocation.Options) (revocation.Validator, error)
 }
 
-// NewFetcher returns a new fetcher instance
-func NewFetcher(httpClient *http.Client, cacheRoot string) (corecrl.Fetcher, error) {
+// CreateCRLFetcher returns a new fetcher instance
+func CreateCRLFetcher(httpClient *http.Client, cacheRoot string) (corecrl.Fetcher, error) {
 	crlFetcher, err := corecrl.NewHTTPFetcher(httpClient)
 	if err != nil {
 		return nil, err

@@ -43,7 +43,7 @@ func NewCRLHandler() RevocationFactory {
 func (h *CRLHandler) NewFetcher() (corecrl.Fetcher, error) {
 	var err error
 	fetcherOnce.Do(func() {
-		h.Fetcher, err = NewFetcher(h.httpClient, dir.PathCRLCache)
+		h.Fetcher, err = CreateCRLFetcher(h.httpClient, dir.PathCRLCache)
 		if err == nil {
 			h.configureCache()
 		}

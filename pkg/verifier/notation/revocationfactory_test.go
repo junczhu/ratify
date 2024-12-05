@@ -27,14 +27,14 @@ func TestCRLNewFetcher(t *testing.T) {
 	cacheRoot := "/tmp/cache"
 
 	t.Run("successful fetcher creation", func(t *testing.T) {
-		fetcher, err := NewFetcher(httpClient, cacheRoot)
+		fetcher, err := CreateCRLFetcher(httpClient, cacheRoot)
 		assert.NoError(t, err)
 		assert.NotNil(t, fetcher)
 	})
 
 	t.Run("error in creating HTTP fetcher", func(t *testing.T) {
 		// Simulate error by passing nil httpClient
-		fetcher, err := NewFetcher(nil, cacheRoot)
+		fetcher, err := CreateCRLFetcher(nil, cacheRoot)
 		assert.Error(t, err)
 		assert.Nil(t, fetcher)
 	})
@@ -60,7 +60,7 @@ func TestCacheCRL(t *testing.T) {
 	ctx := context.Background()
 	httpClient := &http.Client{}
 	cacheRoot := "/tmp/cache"
-	fetcher, _ := NewFetcher(httpClient, cacheRoot)
+	fetcher, _ := CreateCRLFetcher(httpClient, cacheRoot)
 
 	t.Run("nil fetcher", func(t *testing.T) {
 		certs := []*x509.Certificate{
