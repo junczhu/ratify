@@ -173,7 +173,7 @@ type MockCRLHandler struct {
 }
 
 func (h *MockCRLHandler) NewFetcher() (corecrl.Fetcher, error) {
-	return nil, re.ErrorCodeConfigInvalid.WithComponentType(re.CRL).WithDetail("failed to create CRL fetcher")
+	return nil, re.ErrorCodeConfigInvalid.WithDetail("failed to create CRL fetcher")
 }
 
 func (h *MockCRLHandler) NewValidator(opts revocation.Options) (revocation.Validator, error) {

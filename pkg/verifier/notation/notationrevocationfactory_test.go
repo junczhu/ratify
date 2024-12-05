@@ -150,6 +150,6 @@ func TestConfigureCache(t *testing.T) {
 
 type mockFetcher struct{}
 
-func (m *mockFetcher) Fetch(ctx context.Context, url string) (*corecrl.Bundle, error) {
+func (m *mockFetcher) Fetch(_ context.Context, url string) (*corecrl.Bundle, error) {
 	return nil, nil
 }
