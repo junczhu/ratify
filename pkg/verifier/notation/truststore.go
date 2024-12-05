@@ -100,18 +100,11 @@ func (s *trustStore) getCertificatesInternal(ctx context.Context, storeType trus
 			return certs, fmt.Errorf("no certificates fetched in namedStore: %+v", namedStore)
 		}
 	} else {
-		crlFetcher, err := s.crlHandler.NewFetcher()
-		if err != nil {
-			// log error and continue
-			logger.GetLogger(ctx, logOpt).Warnf("Unable to create CRL fetcher for notation truststore %s with error: %s", namedStore, err)
-		}
 		for _, path := range s.certPaths {
 			bundledCerts, err := utils.GetCertificatesFromPath(path)
 			if err != nil {
 				return nil, err
 			}
-			// fetch CRLs and cache them
-			CacheCRL(ctx, bundledCerts, crlFetcher)
 			certs = append(certs, bundledCerts...)
 		}
 	}

@@ -196,7 +196,6 @@ func TestGetCertificates_certPath(t *testing.T) {
 	trustStore := &trustStore{
 		certPaths:  []string{tmpFile.Name()},
 		certStores: certStoresByType{},
-		crlHandler: NewCRLHandler(),
 	}
 	certs, err := trustStore.getCertificatesInternal(context.Background(), truststore.TypeCA, "")
 	if err != nil {
