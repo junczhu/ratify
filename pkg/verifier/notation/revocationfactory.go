@@ -65,7 +65,7 @@ func CacheCRL(ctx context.Context, certs []*x509.Certificate, fetcher corecrl.Fe
 	var wg sync.WaitGroup
 	for _, cert := range certs {
 		if !SupportCRL(cert) {
-			return
+			continue
 		}
 		cacheCertificateCRL(ctx, cert.CRLDistributionPoints, fetcher, &wg)
 	}
