@@ -176,7 +176,7 @@ func (h *MockCRLHandler) NewFetcher() (corecrl.Fetcher, error) {
 	return nil, re.ErrorCodeConfigInvalid.WithDetail("failed to create CRL fetcher")
 }
 
-func (h *MockCRLHandler) NewValidator(opts revocation.Options) (revocation.Validator, error) {
+func (h *MockCRLHandler) NewValidator(_ revocation.Options) (revocation.Validator, error) {
 	return nil, nil
 }
 
