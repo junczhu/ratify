@@ -114,7 +114,12 @@ func TestKubeRefresher_Refresh(t *testing.T) {
 			expectedError:         true,
 		},
 		{
-			name:                    "Error Caching with CRL Fetcher (non-blocking)",
+			name: "Error Caching with CRL Fetcher (non-blocking)",
+			GetCertsFunc: func(_ context.Context) (map[keymanagementprovider.KMPMapKey][]*x509.Certificate, keymanagementprovider.KeyManagementProviderStatus, error) {
+				return map[keymanagementprovider.KMPMapKey][]*x509.Certificate{
+					{Name: "sample"}: {&x509.Certificate{}},
+				}, keymanagementprovider.KeyManagementProviderStatus{}, nil
+			},
 			providerRawParameters:   []byte(`{"vaultURI": "https://yourkeyvault.vault.azure.net/", "certificates": [{"name": "cert1", "version": "1"}], "tenantID": "yourtenantID", "clientID": "yourclientID"}`),
 			providerType:            "test-kmp",
 			providerRefreshInterval: "1m",
