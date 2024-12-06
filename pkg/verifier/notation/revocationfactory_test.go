@@ -104,7 +104,7 @@ func TestIntermittentFailCacheCRL(t *testing.T) {
 		// Mock fetcher to simulate failure
 		mockFetcher := &MockFetcher{
 			flag: true,
-			FetchFunc: func(ctx context.Context, url string) (*corecrl.Bundle, error) {
+			FetchFunc: func(_ context.Context, url string) (*corecrl.Bundle, error) {
 				return &corecrl.Bundle{}, nil
 			},
 		}
