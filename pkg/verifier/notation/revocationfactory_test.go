@@ -16,9 +16,11 @@ package notation
 import (
 	"context"
 	"crypto/x509"
+	"fmt"
 	"net/http"
 	"testing"
 
+	corecrl "github.com/notaryproject/notation-core-go/revocation/crl"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -82,7 +84,7 @@ func TestCacheCRL(t *testing.T) {
 		t.Log("Certificate does not support CRL")
 	})
 
-	t.Run("valid certificates with CRL distribution points", func(t *testing.T) {
+	t.Run("certificates with CRL distribution points", func(t *testing.T) {
 		certs := []*x509.Certificate{
 			{
 				CRLDistributionPoints: []string{"http://example.com/crl1"},
@@ -93,6 +95,49 @@ func TestCacheCRL(t *testing.T) {
 		}
 		CacheCRL(ctx, certs, fetcher)
 		// Check logs if necessary
-		t.Log("CRLs cached successfully")
+		t.Log("Completed fetching CRLs")
 	})
+}
+func TestIntermittentFailCacheCRL(t *testing.T) {
+	ctx := context.Background()
+	t.Run("fetch CRL fails", func(t *testing.T) {
+		// Mock fetcher to simulate failure
+		mockFetcher := &MockFetcher{
+			flag: true,
+			FetchFunc: func(ctx context.Context, url string) (*corecrl.Bundle, error) {
+				return &corecrl.Bundle{}, nil
+			},
+		}
+		certs := []*x509.Certificate{
+			{
+				CRLDistributionPoints: []string{"http://example.com/crl1"},
+			},
+			{
+				CRLDistributionPoints: []string{"http://example.com/crl2"},
+			},
+			{
+				CRLDistributionPoints: []string{"http://example.com/crl3"},
+			},
+			{
+				CRLDistributionPoints: []string{"http://example.com/crl4"},
+			},
+		}
+		CacheCRL(ctx, certs, mockFetcher)
+		// Check logs if necessary
+		t.Log("Completed fetching CRLs with intermittent failures")
+	})
+}
+
+// MockFetcher is a mock implementation of corecrl.Fetcher for testing purposes
+type MockFetcher struct {
+	flag      bool
+	FetchFunc func(ctx context.Context, url string) (*corecrl.Bundle, error)
+}
+
+func (m *MockFetcher) Fetch(ctx context.Context, url string) (*corecrl.Bundle, error) {
+	m.flag = !m.flag
+	if m.flag {
+		return nil, fmt.Errorf("failed to fetch CRL from %s", url)
+	}
+	return m.FetchFunc(ctx, url)
 }
