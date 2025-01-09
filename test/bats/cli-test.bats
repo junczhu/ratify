@@ -35,6 +35,7 @@ load helpers
 }
 
 @test "notation verifier crl test" {
+    sudo sed -i '1i 127.0.0.1 yourhost' /etc/hosts
     revoke_crl
 
     run bin/ratify verify -c $RATIFY_DIR/config_notation_crl.json -s $TEST_REGISTRY/notation:crl

@@ -247,6 +247,18 @@ EOF
         wait_for_process ${WAIT_TIME} ${SLEEP_TIME} 'kubectl replace -f ./config/samples/clustered/verifier/config_v1beta1_verifier_notation.yaml'
     }
 
+    # update the hostAliases
+    TARGET_IP=$(ip -4 addr show "eth0" | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
+    RATIFY_POD=$(kubectl get pods -n $NAMESPACE --no-headers -o custom-columns=":metadata.name" | grep ratify)
+    
+    kubectl patch pod "$RATIFY_POD" -n "$RATIFY_NAMESPACE" --type='merge' -p "
+        spec:
+        hostAliases:
+        - ip: \"$TARGET_IP\"
+            hostnames:
+            - \"yourhost\"
+        "
+
     # add the tsaroot certificate as an inline key management provider
     cat ./test/bats/tests/config/config_v1beta1_keymanagementprovider_inline.yaml >> crlkmprovider.yaml
     cat .staging/notation/crl-test/root.crt | sed 's/^/      /g' >> crlkmprovider.yaml
