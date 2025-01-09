@@ -17,7 +17,7 @@ spec:
           registryScopes:
             - "*"
           signatureVerification:
-            level: audit
+            level: strict
           trustStores:
             - ca:ca-crl
           trustedIdentities:

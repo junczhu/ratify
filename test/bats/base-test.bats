@@ -256,7 +256,7 @@ EOF
     cat .staging/notation/crl-test/root.crt | sed 's/^/      /g' >> crlkmprovider.yaml
     run kubectl apply -f crlkmprovider.yaml --namespace ${RATIFY_NAMESPACE}
     assert_success
-    run kubectl replace -f ./test/bats/tests/config/config_v1beta1_verifier_notation_audit_crl.yaml
+    run kubectl replace -f ./test/bats/tests/config/config_v1beta1_verifier_notation_crl.yaml
 
     run kubectl run demo --namespace default --image=registry:5000/notation:crl
     assert_success
