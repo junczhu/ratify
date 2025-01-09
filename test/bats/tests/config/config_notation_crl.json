@@ -48,6 +48,8 @@
         ]
     },
     "crl": {
-        "cacheEnabled": true
+        "cache":{
+            "enabled": true
+        }
     }
 }
