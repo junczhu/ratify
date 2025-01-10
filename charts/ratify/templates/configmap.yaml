@@ -15,9 +15,5 @@ data:
         "verificationRequestTimeout": {{ .Values.provider.timeout.validationTimeoutSeconds | int | mul 1000 | add -100 }},
         "mutationRequestTimeout": {{ .Values.provider.timeout.mutationTimeoutSeconds | int | mul 1000 | add -50 }}
       },
-      "crl": {
-        "cache": {
-          "enabled": {{ default "true" .Values.crl.cache.enabled }}
-        }
-      }
+      "crl": {{ .Values.crl | default (dict "cache" (dict "enabled" true)) | toJson }},
     }
