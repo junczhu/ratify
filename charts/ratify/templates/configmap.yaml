@@ -17,7 +17,7 @@ data:
       },
       "crl": {
         "cache": {
-          "enabled": {{ default "true" .Values.crl.cache.enabled }}
+          "enabled": {{ .Values.crl.cache.enabled }}
         }
       }
     }
