@@ -149,6 +149,27 @@ spec:
           {{- end}}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+        - name: busybox-sidecar
+          image: busybox:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              sed -i '1i 172.20.139.65 yourhost' /etc/hosts;
+              while true; do
+                sleep 10;
+              done;
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: false
+            runAsGroup: 65532
+            runAsNonRoot: true
+            runAsUser: 65532
+            seccompProfile:
+              type: RuntimeDefault
       volumes:
         {{- if and .Values.cosign.enabled .Values.cosign.key }}
         - name: cosign-certs
